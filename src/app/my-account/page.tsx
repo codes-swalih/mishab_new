@@ -1,0 +1,1978 @@
+"use client";
+import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import Footer from "@/components/Footer/Footer";
+import * as Icon from "@phosphor-icons/react/dist/ssr";
+import { ref, get, set, remove } from "firebase/database";
+import { database } from "@/firebase/config";
+import MenuFurniture from "@/components/Header/Menu/MenuFurniture";
+import MenuCategory from "@/components/Furniture/MenuCategory";
+import BannerTop from "@/components/Home3/BannerTop";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/firebase/config";
+import { changePassword, resetPassword } from "@/firebase/auth";
+import { getCustomerOrders, Order, updateOrderStatus } from "@/firebase/orders";
+import { locationsData } from "@/components/data/locations";
+
+interface Address {
+  id: string;
+  addressName: string;
+  firstName: string;
+  lastName: string;
+  country: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string;
+}
+
+interface UserData {
+  uid: string;
+  fullName: string;
+  email: string;
+  phone: number;
+  country_code: string;
+  createdAt: string;
+  updatedAt: string;
+  lastLogin: string;
+  addresses?: Address[];
+}
+
+const MyAccount = () => {
+  const [user, loading, error] = useAuthState(auth);
+  const [activeTab, setActiveTab] = useState<string | undefined>("orders");
+  const [activeAddress, setActiveAddress] = useState<string | null>(null);
+  const [activeOrders, setActiveOrders] = useState<string | undefined>("all");
+  const [openDetail, setOpenDetail] = useState<boolean | undefined>(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [showPasswordForm, setShowPasswordForm] = useState<boolean>(false);
+  const [passwordMessage, setPasswordMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [passwordLoading, setPasswordLoading] = useState<boolean>(false);
+  const [showResetPassword, setShowResetPassword] = useState<boolean>(false);
+  const [resetMessage, setResetMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [resetLoading, setResetLoading] = useState<boolean>(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState(false);
+  const [showCancelPopup, setShowCancelPopup] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
+
+  // Form state for address
+  const [formData, setFormData] = useState({
+    addressName: "",
+    firstName: "",
+    lastName: "",
+    country: "",
+    streetAddress: "",
+    city: "",
+    state: "",
+    zip: "",
+    phone: "",
+  });
+
+  // Location dropdown states - Initialize with hardcoded states immediately
+  const [selectedCountry, setSelectedCountry] = useState("India");
+  const [selectedState, setSelectedState] = useState("");
+  const [availableStates, setAvailableStates] = useState<
+    Array<{ name: string; code: string; cities: string[] }>
+  >([
+    {
+      name: "Andhra Pradesh",
+      code: "AP",
+      cities: ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool"],
+    },
+    {
+      name: "Karnataka",
+      code: "KA",
+      cities: ["Bangalore", "Mysore", "Hubli", "Mangalore", "Belgaum"],
+    },
+    {
+      name: "Kerala",
+      code: "KL",
+      cities: [
+        "Thiruvananthapuram",
+        "Kochi",
+        "Kozhikode",
+        "Thrissur",
+        "Palakkad",
+      ],
+    },
+    {
+      name: "Maharashtra",
+      code: "MH",
+      cities: ["Mumbai", "Pune", "Nagpur", "Thane", "Nashik"],
+    },
+    {
+      name: "Tamil Nadu",
+      code: "TN",
+      cities: ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli", "Salem"],
+    },
+    {
+      name: "Gujarat",
+      code: "GJ",
+      cities: ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar"],
+    },
+    {
+      name: "Rajasthan",
+      code: "RJ",
+      cities: ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Bikaner"],
+    },
+    {
+      name: "West Bengal",
+      code: "WB",
+      cities: ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri"],
+    },
+    {
+      name: "Uttar Pradesh",
+      code: "UP",
+      cities: ["Lucknow", "Kanpur", "Agra", "Varanasi", "Meerut"],
+    },
+    {
+      name: "Madhya Pradesh",
+      code: "MP",
+      cities: ["Bhopal", "Indore", "Gwalior", "Jabalpur", "Ujjain"],
+    },
+  ]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+
+  // States are now initialized directly in useState above
+
+  const handleCancelOrder = (orderId: string) => {
+    setOrderToCancel(orderId);
+    setShowCancelPopup(true);
+  };
+
+  const confirmCancelOrder = async () => {
+    if (!orderToCancel) return;
+
+    setCancellingOrder(true);
+    setShowCancelPopup(false);
+
+    try {
+      // Update order status to cancelled
+      await updateOrderStatus(orderToCancel, "cancelled");
+
+      // Update local orders state
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order.orderId === orderToCancel
+            ? { ...order, orderStatus: "cancelled" as const }
+            : order
+        )
+      );
+
+      // Update selected order if it's the one being cancelled
+      if (selectedOrder && selectedOrder.orderId === orderToCancel) {
+        setSelectedOrder((prev) =>
+          prev ? { ...prev, orderStatus: "cancelled" as const } : null
+        );
+      }
+
+      // Order cancelled successfully
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      // Failed to cancel order
+    } finally {
+      setCancellingOrder(false);
+      setOrderToCancel(null);
+    }
+  };
+
+  const cancelCancelOrder = () => {
+    setShowCancelPopup(false);
+    setOrderToCancel(null);
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setPasswordLoading(true);
+    setPasswordMessage(null);
+
+    const formData = new FormData(e.currentTarget);
+    const currentPassword = formData.get("currentPassword") as string;
+    const newPassword = formData.get("newPassword") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+
+    // Validate passwords match
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: "error", text: "New passwords do not match" });
+      setPasswordLoading(false);
+      return;
+    }
+
+    // Validate password length
+    if (newPassword.length < 6) {
+      setPasswordMessage({
+        type: "error",
+        text: "Password must be at least 6 characters long",
+      });
+      setPasswordLoading(false);
+      return;
+    }
+
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordMessage({
+        type: "success",
+        text: "Password updated successfully!",
+      });
+      setShowPasswordForm(false);
+      // Reset form
+      (e.target as HTMLFormElement).reset();
+    } catch (error: any) {
+      setPasswordMessage({
+        type: "error",
+        text: error.message || "Failed to update password",
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetMessage(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("resetEmail") as string;
+
+    if (!email) {
+      setResetMessage({
+        type: "error",
+        text: "Please enter your email address",
+      });
+      setResetLoading(false);
+      return;
+    }
+
+    try {
+      await resetPassword(email);
+      setResetMessage({
+        type: "success",
+        text: "Password reset email sent! Check your inbox and spam folder.",
+      });
+      setShowResetPassword(false);
+      // Reset form
+      (e.target as HTMLFormElement).reset();
+    } catch (error: any) {
+      setResetMessage({
+        type: "error",
+        text: error.message || "Failed to send password reset email",
+      });
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const fetchAddresses = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const addressesRef = ref(database, `/customers/${user.uid}/addresses`);
+      const snapshot = await get(addressesRef);
+
+      if (snapshot.exists()) {
+        const addressesData = snapshot.val();
+        const addressesArray = Array.isArray(addressesData)
+          ? addressesData
+          : Object.entries(addressesData).map(([key, value]) => ({
+              id: key,
+              ...(value as Omit<Address, "id">),
+            }));
+        setAddresses(addressesArray);
+      }
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+    }
+  }, [user]);
+
+  const fetchOrders = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setOrdersLoading(true);
+      const userOrders = await getCustomerOrders(user.uid);
+      setOrders(userOrders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [user]);
+
+  const resetForm = () => {
+    setFormData({
+      addressName: "",
+      firstName: "",
+      lastName: "",
+      country: "",
+      streetAddress: "",
+      city: "",
+      state: "",
+      zip: "",
+      phone: "",
+    });
+    setSelectedCountry("India");
+    setSelectedState("");
+    setAvailableCities([]);
+  };
+
+  const openAddForm = () => {
+    resetForm();
+    setEditingAddress(null);
+    setActiveAddress("new");
+  };
+
+  const openEditForm = (address: Address) => {
+    setFormData({
+      addressName: address.addressName,
+      firstName: address.firstName,
+      lastName: address.lastName,
+      country: address.country,
+      streetAddress: address.streetAddress,
+      city: address.city,
+      state: address.state,
+      zip: address.zip,
+      phone: address.phone,
+    });
+    setEditingAddress(address);
+    setActiveAddress("edit");
+
+    // Set dropdown states for editing
+    setSelectedCountry("India");
+    setSelectedState(address.state);
+
+    // Find and set available cities for the state from locations.json
+    const india = locationsData.countries.find((c) => c.name === "India");
+    if (india) {
+      const state = india.states.find((s) => s.name === address.state);
+      if (state) {
+        setAvailableCities(state.cities);
+        console.log(
+          "Debug - Cities loaded for editing",
+          address.state,
+          ":",
+          state.cities
+        );
+      }
+    } else {
+      // Fallback to hardcoded states
+      const state = availableStates.find((s) => s.name === address.state);
+      if (state) {
+        setAvailableCities(state.cities);
+      }
+    }
+  };
+
+  const closeForm = () => {
+    resetForm();
+    setEditingAddress(null);
+    setActiveAddress(null);
+  };
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle country selection
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const countryName = e.target.value;
+    setSelectedCountry(countryName);
+    setSelectedState("");
+    setFormData((prev) => ({
+      ...prev,
+      country: countryName,
+      state: "",
+      city: "",
+    }));
+
+    // Find and set available states for selected country
+    const country = locationsData.countries.find((c) => c.name === countryName);
+    if (country) {
+      setAvailableStates(country.states);
+      setAvailableCities([]);
+    } else {
+      setAvailableStates([]);
+      setAvailableCities([]);
+    }
+  };
+
+  // Handle state selection
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const stateName = e.target.value;
+    setSelectedState(stateName);
+
+    // Find cities from locations.json for the selected state
+    const india = locationsData.countries.find((c) => c.name === "India");
+    if (india) {
+      const state = india.states.find((s) => s.name === stateName);
+      if (state) {
+        setAvailableCities(state.cities);
+        // Auto-select the first city
+        const firstCity = state.cities[0];
+        setFormData((prev) => ({
+          ...prev,
+          state: stateName,
+          city: firstCity,
+        }));
+        console.log("Debug - Cities loaded for", stateName, ":", state.cities);
+      } else {
+        setAvailableCities([]);
+        setFormData((prev) => ({
+          ...prev,
+          state: stateName,
+          city: "",
+        }));
+      }
+    } else {
+      // Fallback to hardcoded states
+      const state = availableStates.find((s) => s.name === stateName);
+      if (state) {
+        setAvailableCities(state.cities);
+        const firstCity = state.cities[0];
+        setFormData((prev) => ({
+          ...prev,
+          state: stateName,
+          city: firstCity,
+        }));
+      } else {
+        setAvailableCities([]);
+        setFormData((prev) => ({
+          ...prev,
+          state: stateName,
+          city: "",
+        }));
+      }
+    }
+  };
+
+  // Handle city selection
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const cityName = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      city: cityName,
+    }));
+  };
+
+  const handleAddressSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) return;
+
+    try {
+      if (activeAddress === "edit" && editingAddress) {
+        // Update existing address
+        const addressRef = ref(
+          database,
+          `/customers/${user.uid}/addresses/${editingAddress.id}`
+        );
+        await set(addressRef, formData);
+
+        // Update local state
+        setAddresses((prev) =>
+          prev.map((addr) =>
+            addr.id === editingAddress.id
+              ? { ...formData, id: editingAddress.id }
+              : addr
+          )
+        );
+        // Address updated successfully
+      } else {
+        // Add new address
+        const newAddressId = Date.now().toString();
+        const newAddressRef = ref(
+          database,
+          `/customers/${user.uid}/addresses/${newAddressId}`
+        );
+        await set(newAddressRef, formData);
+
+        // Update local state
+        setAddresses((prev) => [...prev, { ...formData, id: newAddressId }]);
+      }
+
+      closeForm();
+    } catch (error) {
+      console.error("Error saving address:", error);
+      // Failed to save address
+    }
+  };
+
+  const deleteAddress = async (addressId: string) => {
+    if (!window.confirm("Are you sure you want to delete this address?"))
+      return;
+
+    try {
+      if (!user) return;
+
+      const addressRef = ref(
+        database,
+        `/customers/${user.uid}/addresses/${addressId}`
+      );
+      await remove(addressRef);
+
+      // Update local state
+      setAddresses((prev) => prev.filter((a) => a.id !== addressId));
+      // Address deleted successfully
+    } catch (error) {
+      console.error("Error deleting address:", error);
+      // Failed to delete address
+    }
+  };
+
+  const fetchUserData = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      let firebaseData = null;
+      try {
+        const userRef = ref(database, `/customers/${user.uid}`);
+        const snapshot = await get(userRef);
+        if (snapshot.exists()) {
+          firebaseData = snapshot.val();
+        }
+      } catch (error) {
+        console.error("Error fetching Firebase data:", error);
+      }
+
+      const userData: UserData = {
+        uid: user.uid,
+        fullName: firebaseData?.fullName || user.displayName || "User",
+        email: user.email || "",
+        phone: firebaseData?.phone || 0,
+        country_code: firebaseData?.country_code || "",
+        createdAt: firebaseData?.createdAt || new Date().toISOString(),
+        updatedAt: firebaseData?.updatedAt || new Date().toISOString(),
+        lastLogin: firebaseData?.lastLogin || new Date().toISOString(),
+      };
+
+      setUserData(userData);
+    } catch (error) {
+      console.error("Error processing user data:", error);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+      fetchAddresses();
+      fetchOrders();
+    }
+  }, [user, fetchUserData, fetchAddresses, fetchOrders]);
+
+  const mapStatusToStep = (status?: string): number => {
+    if (!status) return 1;
+    const s = status.toLowerCase();
+    if (s.includes("delivered")) return 5;
+    if (s.includes("out for delivery")) return 4;
+    if (
+      s.includes("in transit") ||
+      s.includes("in-transit") ||
+      s.includes("shipped")
+    )
+      return 3;
+    if (
+      s.includes("confirmed") ||
+      s.includes("packed") ||
+      s.includes("ready to ship")
+    )
+      return 2;
+    return 1;
+  };
+
+  const deriveCurrentStep = (order: Order): number => {
+    // Prefer tracking.status, fallback to orderStatus mapping
+    const trackingStatus = (order as any)?.tracking?.status as
+      | string
+      | undefined;
+    if (trackingStatus) return mapStatusToStep(trackingStatus);
+    // Map order.orderStatus to steps
+    switch (order.orderStatus) {
+      case "delivered":
+        return 5;
+      case "shipped":
+        return 3;
+      case "confirmed":
+        return 2;
+      case "pending":
+      default:
+        return 1;
+    }
+  };
+
+  const getStatusLabel = (order: Order): string => {
+    const tStatus = (order as any)?.tracking?.status as string | undefined;
+    if (tStatus && tStatus.trim()) return tStatus;
+    switch (order.orderStatus) {
+      case "delivered":
+        return "Delivered";
+      case "shipped":
+        return "Shipped";
+      case "confirmed":
+        return "Order Confirmed";
+      case "cancelled":
+        return "Cancelled";
+      case "pending":
+      default:
+        return "Order Placed";
+    }
+  };
+
+  const getStatusColorClasses = (
+    label: string
+  ): { bg: string; text: string } => {
+    const s = label.toLowerCase();
+    if (s.includes("cancel")) return { bg: "bg-red/10", text: "text-red" };
+    if (s.includes("deliver")) return { bg: "bg-green/10", text: "text-green" };
+    if (s.includes("out for delivery"))
+      return { bg: "bg-orange/10", text: "text-orange" } as any;
+    if (s.includes("ship")) return { bg: "bg-blue/10", text: "text-blue" };
+    if (s.includes("confirm")) return { bg: "bg-green/10", text: "text-green" };
+    if (s.includes("pending") || s.includes("placed"))
+      return { bg: "bg-yellow/10", text: "text-yellow" };
+    return { bg: "bg-gray/10", text: "text-gray" };
+  };
+
+  const refreshTracking = async () => {
+    if (!selectedOrder) return;
+    setTrackingError(null);
+    setTrackingLoading(true);
+    try {
+      const payload: any = {
+        orderId: selectedOrder.orderId,
+      };
+      if ((selectedOrder as any).shiprocketShipmentId)
+        payload.shipmentId = (selectedOrder as any).shiprocketShipmentId;
+      if ((selectedOrder as any).awbCode)
+        payload.awb = (selectedOrder as any).awbCode;
+
+      const res = await fetch("/api/track-shiprocket", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        throw new Error(`Tracking request failed (${res.status})`);
+      }
+
+      // Re-fetch the order from Firebase to get updated tracking snapshot
+      const orderRef = ref(database, `orders/${selectedOrder.orderId}`);
+      const snapshot = await get(orderRef);
+      if (snapshot.exists()) {
+        const updated = snapshot.val() as Order;
+        setSelectedOrder(updated);
+        // Also update list
+        setOrders((prev) =>
+          prev.map((o) => (o.orderId === updated.orderId ? updated : o))
+        );
+      }
+    } catch (err: any) {
+      setTrackingError(err?.message || "Failed to refresh tracking");
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
+  const handleActiveOrders = (order: string) => {
+    setActiveOrders(order);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="text-lg mb-4">
+            Please log in to access your account
+          </div>
+          <Link
+            href="/login"
+            className="bg-green text-white px-6 py-2 rounded-lg"
+          >
+            Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">User not found. Please login again.</div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div id="header" className="relative w-full">
+        <BannerTop
+          props="bg-black py-3"
+          textColor="text-white"
+          bgLine="bg-black"
+        />
+        <MenuFurniture props="bg-white" />
+        <MenuCategory />
+      </div>
+      <div className="profile-block md:py-20 py-10">
+        <div className="container">
+          <div className="content-main flex gap-y-8 max-md:flex-col w-full">
+            <div className="left md:w-1/3 w-full xl:pr-[3.125rem] lg:pr-[28px] md:pr-[16px]">
+              <div className="user-infor bg-surface lg:px-7 px-4 lg:py-10 py-5 md:rounded-[20px] rounded-xl">
+                <div className="heading flex flex-col items-center justify-center">
+                  <div className="avatar">
+                    <div className="md:w-[140px] w-[120px] md:h-[140px] h-[120px] rounded-full bg-gray-200 flex items-center justify-center">
+                      <Icon.User size={60} className="text-gray-400" />
+                    </div>
+                  </div>
+                  <div className="name heading6 mt-4 text-center">
+                    {userData.fullName}
+                  </div>
+                  <div className="mail heading6 font-normal normal-case text-secondary text-center mt-1">
+                    {userData.email}
+                  </div>
+                </div>
+                <div className="menu-tab w-full max-w-none lg:mt-10 mt-6">
+                  <Link
+                    href={"#!"}
+                    scroll={false}
+                    className={`item flex items-center gap-3 w-full px-5 py-4 rounded-lg cursor-pointer duration-300 hover:bg-white ${
+                      activeTab === "orders" ? "active" : ""
+                    }`}
+                    onClick={() => setActiveTab("orders")}
+                  >
+                    <Icon.Package size={20} />
+                    <strong className="heading6">Orders</strong>
+                  </Link>
+                  <Link
+                    href={"#!"}
+                    scroll={false}
+                    className={`item flex items-center gap-3 w-full px-5 py-4 rounded-lg cursor-pointer duration-300 hover:bg-white mt-1.5 ${
+                      activeTab === "address" ? "active" : ""
+                    }`}
+                    onClick={() => setActiveTab("address")}
+                  >
+                    <Icon.Tag size={20} />
+                    <strong className="heading6">My Address</strong>
+                  </Link>
+                  <Link
+                    href={"#!"}
+                    scroll={false}
+                    className={`item flex items-center gap-3 w-full px-5 py-4 rounded-lg cursor-pointer duration-300 hover:bg-white mt-1.5 ${
+                      activeTab === "profile" ? "active" : ""
+                    }`}
+                    onClick={() => setActiveTab("profile")}
+                  >
+                    <Icon.GearSix size={20} />
+                    <strong className="heading6">Profile</strong>
+                  </Link>
+                  <Link
+                    href={"/login"}
+                    className="item flex items-center gap-3 w-full px-5 py-4 rounded-lg cursor-pointer duration-300 hover:bg-white mt-1.5"
+                  >
+                    <Icon.SignOut size={20} />
+                    <strong className="heading6">Logout</strong>
+                  </Link>
+                </div>
+              </div>
+            </div>
+            <div className="right md:w-2/3 w-full pl-2.5">
+              {/* Orders Tab with Dynamic Stats */}
+              <div
+                className={`tab text-content w-full ${
+                  activeTab === "orders" ? "block" : "hidden"
+                }`}
+              >
+                {/* Dynamic Order Statistics */}
+                <div className="overview grid sm:grid-cols-3 gap-5 mb-7">
+                  <div className="item flex items-center justify-between p-5 border border-line rounded-lg box-shadow-xs">
+                    <div className="counter">
+                      <span className="text-secondary">Pending Orders</span>
+                      <h5 className="heading5 mt-1">
+                        {
+                          orders.filter(
+                            (order) => order.orderStatus === "pending"
+                          ).length
+                        }
+                      </h5>
+                    </div>
+                    <Icon.HourglassMedium className="text-4xl" />
+                  </div>
+                  <div className="item flex items-center justify-between p-5 border border-line rounded-lg box-shadow-xs">
+                    <div className="counter">
+                      <span className="text-secondary">Cancelled Orders</span>
+                      <h5 className="heading5 mt-1">
+                        {
+                          orders.filter(
+                            (order) => order.orderStatus === "cancelled"
+                          ).length
+                        }
+                      </h5>
+                    </div>
+                    <Icon.ReceiptX className="text-4xl" />
+                  </div>
+                  <div className="item flex items-center justify-between p-5 border border-line rounded-lg box-shadow-xs">
+                    <div className="counter">
+                      <span className="text-secondary">Total Orders</span>
+                      <h5 className="heading5 mt-1">{orders.length}</h5>
+                    </div>
+                    <Icon.Package className="text-4xl" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Orders Tab */}
+              <div
+                className={`tab text-content overflow-hidden w-full p-7 border border-line rounded-xl ${
+                  activeTab === "orders" ? "block" : "hidden"
+                }`}
+              >
+                <h6 className="heading6">Your Orders</h6>
+                <div className="w-full hide-scrollbar overflow-x-auto">
+                  <div className="menu-tab grid grid-cols-5 max-lg:w-[500px] hide-scrollbar border-b border-line mt-3">
+                    {[
+                      "all",
+                      "pending",
+                      "delivery",
+                      "completed",
+                      "canceled",
+                    ].map((item, index) => (
+                      <button
+                        key={index}
+                        className={`item relative px-3 py-2.5 text-secondary text-center duration-300 hover:text-black border-b-2 ${
+                          activeOrders === item
+                            ? "active border-black"
+                            : "border-transparent"
+                        }`}
+                        onClick={() => handleActiveOrders(item)}
+                      >
+                        <span className="relative text-button z-[1]">
+                          {item}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="list_order">
+                  {ordersLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2"></div>
+                        <p className="text-secondary text-sm">
+                          Loading orders...
+                        </p>
+                      </div>
+                    </div>
+                  ) : orders.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="text-secondary mb-4">No orders found</div>
+                      <Link href="/shop" className="button-main">
+                        Start Shopping
+                      </Link>
+                    </div>
+                  ) : (
+                    orders
+                      .filter((order) => {
+                        if (activeOrders === "all") return true;
+                        if (activeOrders === "pending")
+                          return order.orderStatus === "pending";
+                        if (activeOrders === "delivery")
+                          return order.orderStatus === "shipped";
+                        if (activeOrders === "completed")
+                          return order.orderStatus === "delivered";
+                        if (activeOrders === "canceled")
+                          return order.orderStatus === "cancelled";
+                        return true;
+                      })
+                      .map((order) => (
+                        <div
+                          key={order.orderId}
+                          className="order_item mt-5 border border-line rounded-lg box-shadow-xs"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-4 p-5 border-b border-line">
+                            <div className="flex items-center gap-2">
+                              <strong className="text-title">
+                                Order Number:
+                              </strong>
+                              <strong className="order_number text-button uppercase">
+                                {order.orderId}
+                              </strong>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <strong className="text-title">
+                                Order status:
+                              </strong>
+                              <span
+                                className={`tag px-4 py-1.5 rounded-full caption1 font-semibold ${
+                                  order.orderStatus === "pending"
+                                    ? "bg-yellow/10 text-yellow"
+                                    : order.orderStatus === "shipped"
+                                    ? "bg-blue/10 text-blue"
+                                    : order.orderStatus === "delivered"
+                                    ? "bg-green/10 text-green"
+                                    : order.orderStatus === "cancelled"
+                                    ? "bg-red/10 text-red"
+                                    : "bg-gray/10 text-gray"
+                                }`}
+                              >
+                                {order.orderStatus.charAt(0).toUpperCase() +
+                                  order.orderStatus.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="list_prd px-5">
+                            {order.items.map((item, index) => (
+                              <div
+                                key={index}
+                                className="prd_item flex flex-wrap items-center justify-between gap-3 py-5 border-b border-line"
+                              >
+                                <div className="flex items-center gap-5">
+                                  <div className="bg-img flex-shrink-0 md:w-[100px] w-20 aspect-square rounded-lg overflow-hidden">
+                                    <Image
+                                      src={
+                                        item.thumbImage?.[0] ||
+                                        "/images/product/default.png"
+                                      }
+                                      width={1000}
+                                      height={1000}
+                                      alt={item.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="prd_name text-title">
+                                      {item.name}
+                                    </div>
+                                    {(item.selectedSize ||
+                                      item.selectedColor) && (
+                                      <div className="caption1 text-secondary mt-2">
+                                        {item.selectedSize && (
+                                          <span className="prd_size uppercase">
+                                            {item.selectedSize}
+                                          </span>
+                                        )}
+                                        {item.selectedSize &&
+                                          item.selectedColor && <span>/</span>}
+                                        {item.selectedColor && (
+                                          <span className="prd_color capitalize">
+                                            {item.selectedColor}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="text-title">
+                                  <span className="prd_quantity">
+                                    {item.quantity}
+                                  </span>
+                                  <span> X </span>
+                                  <span className="prd_price">
+                                    ₹{item.salePrice || item.price}.00
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex flex-wrap gap-4 p-5">
+                            <div className="flex-1">
+                              <div className="text-sm text-secondary mb-2">
+                                <strong>
+                                  Order Date:{" "}
+                                  {new Date(order.createdAt).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    }
+                                  )}
+                                </strong>
+                              </div>
+                              <div className="text-xs text-secondary">
+                                Time:{" "}
+                                {new Date(order.createdAt).toLocaleTimeString(
+                                  "en-US",
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  }
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                className="button-main"
+                                onClick={() => {
+                                  setSelectedOrder(order);
+                                  setOpenDetail(true);
+                                }}
+                              >
+                                Order Details
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                  )}
+                </div>
+              </div>
+
+              {/* Address Tab */}
+              <div
+                className={`tab_address text-content w-full p-7 border border-line rounded-xl ${
+                  activeTab === "address" ? "block" : "hidden"
+                }`}
+              >
+                <div className="flex justify-between items-center mb-6">
+                  <h6 className="heading6">My Addresses</h6>
+                  <button
+                    className="button-main bg-black text-white px-6 py-3 rounded-lg hover:bg-black/90 hover:text-white duration-300"
+                    onClick={openAddForm}
+                  >
+                    Add New Address
+                  </button>
+                </div>
+
+                {/* List of saved addresses */}
+                {addresses.length > 0 &&
+                  activeAddress !== "new" &&
+                  activeAddress !== "edit" && (
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {addresses.map((address) => (
+                        <div
+                          key={address.id}
+                          className="border border-line rounded-lg p-4"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <h6 className="heading6">{address.addressName}</h6>
+                            <div className="flex gap-2">
+                              <button
+                                className="text-secondary hover:text-black"
+                                onClick={() => openEditForm(address)}
+                              >
+                                <Icon.PencilSimple size={20} />
+                              </button>
+                              <button
+                                className="text-red hover:text-red-600"
+                                onClick={() => deleteAddress(address.id)}
+                              >
+                                <Icon.Trash size={20} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="text-secondary">
+                            <p>
+                              {address.firstName} {address.lastName}
+                            </p>
+                            <p>{address.streetAddress}</p>
+                            <p>
+                              {address.city}, {address.state} {address.zip}
+                            </p>
+                            <p>{address.country}</p>
+                            <p className="mt-2">Phone: {address.phone}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                {/* Add/Edit Address Form */}
+                {(activeAddress === "new" || activeAddress === "edit") && (
+                  <form onSubmit={handleAddressSubmit}>
+                    <div className="heading6 mb-4">
+                      {activeAddress === "edit"
+                        ? "Edit Address"
+                        : "Add New Address"}
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4 gap-y-5">
+                      <div className="address-name sm:col-span-2">
+                        <label
+                          htmlFor="addressName"
+                          className="caption1 capitalize"
+                        >
+                          Address Name <span className="text-red">*</span>
+                        </label>
+                        <input
+                          className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                          id="addressName"
+                          name="addressName"
+                          type="text"
+                          value={formData.addressName}
+                          onChange={handleFormChange}
+                          placeholder="Home, Office, etc."
+                          required
+                        />
+                      </div>
+                      <div className="first-name">
+                        <label
+                          htmlFor="firstName"
+                          className="caption1 capitalize"
+                        >
+                          First Name <span className="text-red">*</span>
+                        </label>
+                        <input
+                          className="border border-gray-400  mt-2 px-4 py-3 w-full rounded-lg"
+                          id="firstName"
+                          name="firstName"
+                          type="text"
+                          value={formData.firstName}
+                          onChange={handleFormChange}
+                          required
+                        />
+                      </div>
+                      <div className="last-name">
+                        <label
+                          htmlFor="lastName"
+                          className="caption1 capitalize"
+                        >
+                          Last Name <span className="text-red">*</span>
+                        </label>
+                        <input
+                          className=" border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                          id="lastName"
+                          name="lastName"
+                          type="text"
+                          value={formData.lastName}
+                          onChange={handleFormChange}
+                          required
+                        />
+                      </div>
+                      <div className="country">
+                        <label
+                          htmlFor="country"
+                          className="caption1 capitalize"
+                        >
+                          Country / Region <span className="text-red">*</span>
+                        </label>
+                        <input
+                          className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                          id="country"
+                          name="country"
+                          value="India"
+                          readOnly
+                          disabled
+                        />
+                      </div>
+                      <div className="street sm:col-span-2">
+                        <label
+                          htmlFor="streetAddress"
+                          className="caption1 capitalize"
+                        >
+                          Street Address <span className="text-red">*</span>
+                        </label>
+                        <input
+                          className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                          id="streetAddress"
+                          name="streetAddress"
+                          type="text"
+                          value={formData.streetAddress}
+                          onChange={handleFormChange}
+                          required
+                        />
+                      </div>
+                      <div className="select-block">
+                        <label
+                          htmlFor="state"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          State *
+                        </label>
+                        <select
+                          className="border border-gray-400 px-4 py-3 w-full rounded-lg bg-white"
+                          id="state"
+                          name="state"
+                          value={selectedState}
+                          onChange={handleStateChange}
+                          required
+                          disabled={availableStates.length === 0}
+                        >
+                          <option value="">
+                            Select State ({availableStates.length} states
+                            available)
+                          </option>
+                          {availableStates.map((state) => (
+                            <option key={state.code} value={state.name}>
+                              {state.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="">
+                        <label
+                          htmlFor="city"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          City *
+                        </label>
+                        <select
+                          className="border border-gray-400 px-4 py-3 w-full rounded-lg bg-white"
+                          id="city"
+                          name="city"
+                          value={formData.city}
+                          onChange={handleCityChange}
+                          required
+                          disabled={availableCities.length === 0}
+                        >
+                          <option value="">
+                            Select City ({availableCities.length} cities
+                            available)
+                          </option>
+                          {availableCities.map((city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="zip">
+                        <label htmlFor="zip" className="caption1 capitalize">
+                          ZIP <span className="text-red">*</span>
+                        </label>
+                        <input
+                          className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                          id="zip"
+                          name="zip"
+                          type="text"
+                          value={formData.zip}
+                          onChange={handleFormChange}
+                          required
+                        />
+                      </div>
+                      <div className="phone">
+                        <label htmlFor="phone" className="caption1 capitalize">
+                          Phone <span className="text-red">*</span>
+                        </label>
+                        <input
+                          className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                          id="phone"
+                          name="phone"
+                          type="text"
+                          value={formData.phone}
+                          onChange={handleFormChange}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-4 lg:mt-10 mt-6">
+                      <button
+                        type="submit"
+                        className="button-main bg-black text-white px-10 py-3 rounded-lg hover:bg-black/90 duration-300"
+                      >
+                        {activeAddress === "edit"
+                          ? "Update Address"
+                          : "Save Address"}
+                      </button>
+                      <button
+                        type="button"
+                        className="button-main bg-white border border-black text-black px-10 py-3 rounded-lg hover:bg-black hover:text-white duration-300"
+                        onClick={closeForm}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* Empty state */}
+                {addresses.length === 0 &&
+                  activeAddress !== "new" &&
+                  activeAddress !== "edit" && (
+                    <div className="text-center py-8">
+                      <Icon.MapPin
+                        size={48}
+                        className="mx-auto mb-4 text-gray-300"
+                      />
+                      <p className="text-secondary mb-4">
+                        You haven&apos;t added any addresses yet.
+                      </p>
+                    </div>
+                  )}
+              </div>
+
+              {/* Profile Tab */}
+              <div
+                className={`tab text-content w-full p-7 border border-line rounded-xl ${
+                  activeTab === "profile" ? "block" : "hidden"
+                }`}
+              >
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(e.currentTarget);
+                    const updatedData = {
+                      fullName: formData.get("fullName"),
+                      phone: formData.get("phoneNumber"),
+                      email: formData.get("email"),
+                    };
+
+                    try {
+                      const userStr = localStorage.getItem("user");
+                      if (!userStr) return;
+
+                      const localUser = JSON.parse(userStr);
+
+                      // Get current Firebase data
+                      const userRef = ref(
+                        database,
+                        `/customers/${localUser.uid}`
+                      );
+                      const snapshot = await get(userRef);
+                      const currentData = snapshot.exists()
+                        ? snapshot.val()
+                        : {};
+
+                      // Update in Firebase
+                      await set(userRef, {
+                        ...currentData,
+                        fullName: updatedData.fullName,
+                        phone: updatedData.phone,
+                        email: updatedData.email,
+                        updatedAt: new Date().toISOString(),
+                      });
+
+                      // Update in localStorage
+                      localStorage.setItem(
+                        "user",
+                        JSON.stringify({
+                          ...localUser,
+                          name: updatedData.fullName, // Keep as 'name' in localStorage
+                          email: updatedData.email,
+                        })
+                      );
+
+                      // Update state
+                      setUserData((prev) => {
+                        if (!prev) return prev;
+                        return {
+                          ...prev,
+                          fullName: updatedData.fullName as string,
+                          phone: Number(updatedData.phone) || 0,
+                          email: updatedData.email as string,
+                          updatedAt: new Date().toISOString(),
+                        };
+                      });
+
+                      // Profile updated successfully
+                    } catch (error) {
+                      console.error("Error updating profile:", error);
+                      // Failed to update profile
+                    }
+                  }}
+                >
+                  <div className="heading5 pb-4">Information</div>
+                  <div className="grid sm:grid-cols-2 gap-4 gap-y-5 mt-5">
+                    <div className="full-name sm:col-span-2">
+                      <label htmlFor="fullName" className="caption1 capitalize">
+                        Full Name <span className="text-red">*</span>
+                      </label>
+                      <input
+                        className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                        id="fullName"
+                        name="fullName"
+                        type="text"
+                        defaultValue={userData.fullName}
+                        placeholder="Full name"
+                        required
+                      />
+                    </div>
+                    <div className="phone-number">
+                      <label
+                        htmlFor="phoneNumber"
+                        className="caption1 capitalize"
+                      >
+                        Phone Number <span className="text-red">*</span>
+                      </label>
+                      <input
+                        className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                        id="phoneNumber"
+                        name="phoneNumber"
+                        type="text"
+                        defaultValue={userData.phone || ""}
+                        placeholder="Phone number"
+                        required
+                      />
+                    </div>
+                    <div className="email">
+                      <label htmlFor="email" className="caption1 capitalize">
+                        Email Address <span className="text-red">*</span>
+                      </label>
+                      <input
+                        className="border border-gray-400 mt-2 px-4 py-3 w-full rounded-lg"
+                        id="email"
+                        name="email"
+                        type="email"
+                        defaultValue={userData.email}
+                        placeholder="Email address"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="block-button lg:mt-10 mt-6">
+                    <button type="submit" className="button-main">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+
+                {/* Password Change Section */}
+                <div className="mt-8 pt-8 border-t border-line">
+                  <div className="md:flex justify-between items-center mb-6">
+                    <h6 className="heading6 mb-5 md:mb-0">Change Password</h6>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowResetPassword(!showResetPassword)}
+                        className="button-main bg-black"
+                      >
+                        {showResetPassword ? "Cancel" : "Forgot Password?"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowPasswordForm(!showPasswordForm)}
+                        className="button-main bg-secondary/90 text-white hover:bg-secondary/90"
+                      >
+                        {showPasswordForm ? "Cancel" : "Change Password"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {showPasswordForm && (
+                    <form onSubmit={handlePasswordChange}>
+                      {passwordMessage && (
+                        <div
+                          className={`p-4 rounded-lg mb-4 ${
+                            passwordMessage.type === "success"
+                              ? "bg-green-100 text-green-800 border border-green-200"
+                              : "bg-red-100 text-red-800 border border-red-200"
+                          }`}
+                        >
+                          {passwordMessage.text}
+                        </div>
+                      )}
+
+                      <div className="grid sm:grid-cols-1 gap-4 gap-y-5">
+                        <div className="current-password">
+                          <label
+                            htmlFor="currentPassword"
+                            className="caption1 capitalize"
+                          >
+                            Current Password <span className="text-red">*</span>
+                          </label>
+                          <input
+                            className="border-line mt-2 px-4 py-3 w-full rounded-lg"
+                            id="currentPassword"
+                            name="currentPassword"
+                            type="password"
+                            placeholder="Enter current password"
+                            required
+                          />
+                        </div>
+                        <div className="new-password">
+                          <label
+                            htmlFor="newPassword"
+                            className="caption1 capitalize"
+                          >
+                            New Password <span className="text-red">*</span>
+                          </label>
+                          <input
+                            className="border-line mt-2 px-4 py-3 w-full rounded-lg"
+                            id="newPassword"
+                            name="newPassword"
+                            type="password"
+                            placeholder="Enter new password"
+                            required
+                            minLength={6}
+                          />
+                        </div>
+                        <div className="confirm-password">
+                          <label
+                            htmlFor="confirmPassword"
+                            className="caption1 capitalize"
+                          >
+                            Confirm New Password{" "}
+                            <span className="text-red">*</span>
+                          </label>
+                          <input
+                            className="border-line mt-2 px-4 py-3 w-full rounded-lg"
+                            id="confirmPassword"
+                            name="confirmPassword"
+                            type="password"
+                            placeholder="Confirm new password"
+                            required
+                            minLength={6}
+                          />
+                        </div>
+                      </div>
+                      <div className="block-button lg:mt-6 mt-4">
+                        <button
+                          type="submit"
+                          className="button-main bg-green text-white hover:bg-green/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={passwordLoading}
+                        >
+                          {passwordLoading ? "Updating..." : "Update Password"}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Password Reset Form */}
+                  {showResetPassword && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                      <h6 className="heading6 text-blue-800 mb-4">
+                        Reset Your Password
+                      </h6>
+                      <p className="text-blue-700 mb-4">
+                        Don&apos;t know your current password? No problem! Enter
+                        your email address and we&apos;ll send you a password
+                        reset link.
+                      </p>
+
+                      <form onSubmit={handlePasswordReset}>
+                        {resetMessage && (
+                          <div
+                            className={`p-4 rounded-lg mb-4 ${
+                              resetMessage.type === "success"
+                                ? "bg-green-100 text-green-800 border border-green-200"
+                                : "bg-red-100 text-red-800 border border-red-200"
+                            }`}
+                          >
+                            {resetMessage.text}
+                          </div>
+                        )}
+
+                        <div className="mb-4">
+                          <label
+                            htmlFor="resetEmail"
+                            className="caption1 capitalize block mb-2"
+                          >
+                            Email Address <span className="text-red">*</span>
+                          </label>
+                          <input
+                            className="border-line border-black px-4 py-3 w-full rounded-lg"
+                            id="resetEmail"
+                            name="resetEmail"
+                            type="email"
+                            placeholder="Enter your email address"
+                            defaultValue={userData?.email || ""}
+                            required
+                          />
+                        </div>
+
+                        <div className="flex gap-3">
+                          <button
+                            type="submit"
+                            className="button-main bg-black"
+                            disabled={resetLoading}
+                          >
+                            {resetLoading ? "Sending..." : "Send Reset Email"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowResetPassword(false)}
+                            className="button-main bg-gray-500 text-white hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <Footer />
+      <div
+        className={`modal-order-detail-block flex items-center justify-center`}
+        onClick={() => setOpenDetail(false)}
+      >
+        <div
+          className={`modal-order-detail-main grid grid-cols-2 w-[1160px] bg-white rounded-2xl ${
+            openDetail ? "open" : ""
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="info p-10 border-r border-line">
+            <h5 className="heading5">Order Details</h5>
+            {selectedOrder && (
+              <div className="list_info grid grid-cols-2 gap-10 gap-y-8 mt-5">
+                <div className="info_item">
+                  <strong className="text-button-uppercase text-secondary">
+                    Contact Information
+                  </strong>
+                  <div className="text-sm order_name mt-2">
+                    {selectedOrder.address.firstName}{" "}
+                    {selectedOrder.address.lastName}
+                  </div>
+                  <div className="text-sm order_phone mt-2">
+                    {selectedOrder.address.phone}
+                  </div>
+                  <div className="text-sm normal-case order_email mt-2">
+                    {selectedOrder.userEmail}
+                  </div>
+                </div>
+                <div className="info_item">
+                  <strong className="text-button-uppercase text-secondary">
+                    Payment method
+                  </strong>
+                  <div className="text-sm order_payment mt-2">
+                    {selectedOrder.paymentMethod === "razorpay"
+                      ? "Razorpay"
+                      : "Cash on Delivery"}
+                  </div>
+                </div>
+                <div className="info_item">
+                  <strong className="text-button-uppercase text-secondary">
+                    Shipping address
+                  </strong>
+                  <div className="order_shipping_address mt-2 text-sm text-secondary leading-6">
+                    {selectedOrder.address.streetAddress},{" "}
+                    {selectedOrder.address.city}, {selectedOrder.address.state}{" "}
+                    {selectedOrder.address.zip}, {selectedOrder.address.country}
+                  </div>
+                </div>
+                <div className="info_item">
+                  <strong className="text-button-uppercase text-secondary">
+                    Order Status
+                  </strong>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="text-sm order_status capitalize">
+                      {selectedOrder.orderStatus}
+                    </div>
+                    {selectedOrder.orderStatus === "pending" && (
+                      <button
+                        className="button-main bg-red text-white hover:bg-red/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => handleCancelOrder(selectedOrder.orderId)}
+                        disabled={cancellingOrder}
+                      >
+                        {cancellingOrder ? "Cancelling..." : "Cancel Order"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {selectedOrder.couponCode && (
+                  <div className="info_item">
+                    <strong className="text-button-uppercase text-secondary">
+                      Coupon Code
+                    </strong>
+                    <h6 className="heading6 order_coupon mt-2">
+                      {selectedOrder.couponCode}
+                    </h6>
+                  </div>
+                )}
+                {selectedOrder && (
+                  <div className="info_item">
+                    <strong className="text-button-uppercase text-secondary">
+                      Order Progress
+                    </strong>
+                    <div className="mt-4">
+                      {(() => {
+                        const step = deriveCurrentStep(selectedOrder);
+                        const steps = [
+                          { num: 1, label: "Order Placed" },
+                          { num: 2, label: "Order Confirmed" },
+                          { num: 3, label: "Shipped" },
+                          { num: 4, label: "Out for Delivery" },
+                          { num: 5, label: "Delivered" },
+                        ];
+                        return (
+                          <div className="flex items-center gap-3">
+                            {steps.map((s, idx) => (
+                              <div
+                                key={s.num}
+                                className="flex items-center gap-2"
+                              >
+                                <div
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold tracking-wide ${
+                                    s.num <= step
+                                      ? "bg-black text-white"
+                                      : "bg-gray-200 text-gray-600"
+                                  }`}
+                                >
+                                  {s.num}
+                                </div>
+                                <span
+                                  className={`text-xs ${
+                                    s.num <= step
+                                      ? "text-black font-medium"
+                                      : "text-secondary"
+                                  }`}
+                                >
+                                  {s.label}
+                                </span>
+                                {idx < steps.length - 1 && (
+                                  <div
+                                    className={`w-10 h-0.5 ${
+                                      s.num < step ? "bg-black" : "bg-gray-200"
+                                    }`}
+                                  ></div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                      {/* Colored status badge under progress */}
+                      {(() => {
+                        const label = getStatusLabel(selectedOrder);
+                        const color = getStatusColorClasses(label);
+                        return (
+                          <div className="mt-3">
+                            <span
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${color.bg} ${color.text}`}
+                            >
+                              {label}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Tracking snapshot - render only when any tracking data exists */}
+                    {(() => {
+                      const t = (selectedOrder as any)?.tracking;
+                      const hasAny = Boolean(
+                        t?.expectedDelivery ||
+                          t?.courierName ||
+                          (selectedOrder as any)?.courierName ||
+                          t?.awbCode ||
+                          (selectedOrder as any)?.awbCode ||
+                          (Array.isArray(t?.checkpoints) &&
+                            t.checkpoints.length > 0)
+                      );
+                      if (!hasAny) return null;
+                      return (
+                        <div className="mt-4 p-4 rounded-xl border border-line bg-white/60">
+                          <div className="grid grid-cols-2 gap-4">
+                            {(selectedOrder as any)?.tracking
+                              ?.expectedDelivery && (
+                              <div>
+                                <div className="text-xs text-secondary uppercase tracking-wide">
+                                  Expected Delivery
+                                </div>
+                                <div className="text-sm font-medium mt-1">
+                                  {
+                                    (selectedOrder as any)?.tracking
+                                      ?.expectedDelivery
+                                  }
+                                </div>
+                              </div>
+                            )}
+                            {((selectedOrder as any)?.tracking?.courierName ||
+                              (selectedOrder as any)?.courierName) && (
+                              <div>
+                                <div className="text-xs text-secondary uppercase tracking-wide">
+                                  Courier
+                                </div>
+                                <div className="text-sm font-medium mt-1">
+                                  {(selectedOrder as any)?.tracking
+                                    ?.courierName ||
+                                    (selectedOrder as any)?.courierName}
+                                </div>
+                              </div>
+                            )}
+                            {((selectedOrder as any)?.tracking?.awbCode ||
+                              (selectedOrder as any)?.awbCode) && (
+                              <div>
+                                <div className="text-xs text-secondary uppercase tracking-wide">
+                                  AWB
+                                </div>
+                                <div className="text-sm font-medium mt-1">
+                                  {(selectedOrder as any)?.tracking?.awbCode ||
+                                    (selectedOrder as any)?.awbCode}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          {Array.isArray(
+                            (selectedOrder as any)?.tracking?.checkpoints
+                          ) &&
+                            (selectedOrder as any)?.tracking?.checkpoints
+                              .length > 0 && (
+                              <div className="mt-4">
+                                <div className="text-xs text-secondary uppercase tracking-wide mb-2">
+                                  Tracking Updates
+                                </div>
+                                <div className="max-h-40 overflow-auto pr-1 divide-y divide-line">
+                                  {(
+                                    (selectedOrder as any).tracking
+                                      .checkpoints as any[]
+                                  ).map((cp, i) => (
+                                    <div key={i} className="py-2">
+                                      <div className="text-sm">
+                                        {cp.message || cp.status}
+                                      </div>
+                                      <div className="text-xs text-secondary mt-0.5">
+                                        {cp.date}{" "}
+                                        {cp.location ? `• ${cp.location}` : ""}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="list p-10">
+            <h5 className="heading5">Items</h5>
+            <div className="list_prd">
+              {selectedOrder?.items.map((item, index) => (
+                <div
+                  key={index}
+                  className="prd_item flex flex-wrap items-center justify-between gap-3 py-5 border-b border-line"
+                >
+                  <div className="flex items-center gap-5">
+                    <div className="bg-img flex-shrink-0 md:w-[100px] w-20 aspect-square rounded-lg overflow-hidden">
+                      <Image
+                        src={
+                          item.thumbImage?.[0] || "/images/product/default.png"
+                        }
+                        width={1000}
+                        height={1000}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="prd_name text-title">{item.name}</div>
+                      {(item.selectedSize || item.selectedColor) && (
+                        <div className="caption1 text-secondary mt-2">
+                          {item.selectedSize && (
+                            <span className="prd_size uppercase">
+                              {item.selectedSize}
+                            </span>
+                          )}
+                          {item.selectedSize && item.selectedColor && (
+                            <span>/</span>
+                          )}
+                          {item.selectedColor && (
+                            <span className="prd_color capitalize">
+                              {item.selectedColor}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-title">
+                    <span className="prd_quantity">{item.quantity}</span>
+                    <span> X </span>
+                    <span className="prd_price">
+                      ₹{item.salePrice || item.price}.00
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {selectedOrder && (
+              <>
+                <div className="flex items-center justify-between mt-5">
+                  <strong className="text-title">Subtotal</strong>
+                  <strong className="order_subtotal text-title">
+                    ₹{selectedOrder.subtotal}.00
+                  </strong>
+                </div>
+                <div className="flex items-center justify-between mt-4">
+                  <strong className="text-title">Shipping</strong>
+                  <strong className="order_ship text-title">
+                    {selectedOrder.shipping === 0
+                      ? "Free"
+                      : `₹${selectedOrder.shipping}.00`}
+                  </strong>
+                </div>
+                {selectedOrder.discount > 0 && (
+                  <div className="flex items-center justify-between mt-4">
+                    <strong className="text-title">Discount</strong>
+                    <strong className="order_discounts text-title">
+                      -₹{selectedOrder.discount}.00
+                    </strong>
+                  </div>
+                )}
+                <div className="flex items-center justify-between mt-5 pt-5 border-t border-line">
+                  <h5 className="heading5">Total</h5>
+                  <h5 className="order_total heading5">
+                    ₹{selectedOrder.total}.00
+                  </h5>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Cancel Order Confirmation Popup */}
+      {showCancelPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center mb-4">
+              <div className="w-10 h-10 bg-red/10 rounded-full flex items-center justify-center mr-3">
+                <Icon.Warning className="text-red text-xl" />
+              </div>
+              <h3 className="heading6 text-title">Cancel Order</h3>
+            </div>
+
+            <p className="text-secondary mb-6">
+              Are you sure you want to cancel this order? This action cannot be
+              undone.
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={cancelCancelOrder}
+                className="button-main bg-white border border-line text-black hover:bg-gray-100"
+                disabled={cancellingOrder}
+              >
+                Keep Order
+              </button>
+              <button
+                onClick={confirmCancelOrder}
+                className="button-main bg-red text-white hover:bg-red/90"
+                disabled={cancellingOrder}
+              >
+                {cancellingOrder ? "Cancelling..." : "Yes, Cancel Order"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default MyAccount;
