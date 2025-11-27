@@ -1462,7 +1462,7 @@ const Checkout = () => {
                       <button
                         type="button"
                         onClick={handleNewAddress}
-                        className="w-full bg-green text-white py-3 px-4 rounded-lg font-medium hover:bg-green/90 transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-black text-white py-3 px-4 rounded-lg font-medium hover:bg-green/90 transition-colors flex items-center justify-center gap-2"
                       >
                         <Icon.Plus size={20} />
                         Add New Address
