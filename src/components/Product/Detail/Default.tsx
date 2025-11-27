@@ -789,7 +789,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                       width={1000}
                       height={1000}
                       alt="prd-img"
-                      className="w-full aspect-[3/4] object-cover"
+                      className="w-full md:aspect-[/4] object-cover"
                     />
                   </SwiperSlide>
                 ))}
@@ -907,7 +907,12 @@ const Default: React.FC<Props> = ({ data, productId }) => {
 
                 /* Smooth the slide transition with a nicer easing curve */
                 :global(.swiper-wrapper) {
-                  transition-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+                  transition-timing-function: cubic-bezier(
+                    0.22,
+                    0.61,
+                    0.36,
+                    1
+                  ) !important;
                 }
                 :global(.swiper-slide) {
                   backface-visibility: hidden;
@@ -1130,7 +1135,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                   </div>
                 </div>
                 <div className="more-infor mt-6">
-                  <div className="flex items-center gap-4 flex-wrap">
+                  {/* <div className="flex items-center gap-4 flex-wrap">
                     <div className="flex items-center gap-1">
                       <Icon.ArrowClockwise className="body1" />
                       <div className="text-title">Delivery & Return</div>
@@ -1139,11 +1144,11 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                       <Icon.Question className="body1" />
                       <div className="text-title">Ask A Question</div>
                     </div>
-                  </div>
+                  </div> */}
                   <div className="flex items-center gap-1 mt-3">
                     <Icon.Timer className="body1" />
                     <div className="text-title">Estimated Delivery :</div>
-                    <div className="text-secondary">
+                    <div className="lowercase">
                       {productMain.estimatedDeliveryText ||
                         "14 January - 18 January"}
                     </div>
@@ -1304,18 +1309,18 @@ const Default: React.FC<Props> = ({ data, productId }) => {
             </div>
           </div>
         </div>
-        {totalReviews > 0 && (
-          <div className="review-block md:py-20 py-10 bg-surface">
-            <div className="container">
-              <div className="heading flex items-center justify-between flex-wrap gap-4">
-                <div className="heading4">Customer Review</div>
-                <Link
-                  href={"#form-review"}
-                  className="button-main bg-white text-black border border-black"
-                >
-                  Write Reviews
-                </Link>
-              </div>
+        <div className="review-block md:py-20 py-10 bg-surface">
+          <div className="container">
+            <div className="heading flex items-center justify-between flex-wrap gap-4">
+              <div className="heading4">Customer Review</div>
+              <Link
+                href={"#form-review"}
+                className="button-main bg-white text-black border border-black"
+              >
+                Write Reviews
+              </Link>
+            </div>
+            {totalReviews > 0 && (
               <div className="top-overview flex justify-between py-6 max-md:flex-col gap-y-6">
                 {reviewsLoading ? (
                   <div className="w-full text-center py-8">
@@ -1557,21 +1562,20 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                   </>
                 )}
               </div>
-              <div className="list-review">
-                {reviewsLoading ? (
-                  <div className="text-center py-8">
-                    <div className="text-secondary">Loading reviews...</div>
-                  </div>
-                ) : reviewsError ? (
-                  <div className="text-center py-8">
-                    <div className="text-red-500">{reviewsError}</div>
-                  </div>
-                ) : reviewsData.length > 0 ? (
-                  <>
-                    {(showAllReviews
-                      ? reviewsData
-                      : reviewsData.slice(0, 5)
-                    ).map((review, index) => (
+            )}
+            <div className="list-review">
+              {reviewsLoading ? (
+                <div className="text-center py-8">
+                  <div className="text-secondary">Loading reviews...</div>
+                </div>
+              ) : reviewsError ? (
+                <div className="text-center py-8">
+                  <div className="text-red-500">{reviewsError}</div>
+                </div>
+              ) : reviewsData.length > 0 ? (
+                <>
+                  {(showAllReviews ? reviewsData : reviewsData.slice(0, 5)).map(
+                    (review, index) => (
                       <div
                         key={review.id}
                         className="item flex max-lg:flex-col gap-y-4 w-full py-6 border-t border-line"
@@ -1625,251 +1629,244 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                           <div className="body1 mt-3">{review.message}</div>
                         </div>
                       </div>
-                    ))}
-                    {reviewsData.length > 5 && (
-                      <div
-                        className="text-button more-review-btn text-center mt-2 underline cursor-pointer hover:text-black transition-colors"
-                        onClick={() => setShowAllReviews(!showAllReviews)}
-                      >
-                        {showAllReviews
-                          ? "Show Less Comments"
-                          : `View More Comments (${
-                              reviewsData.length - 5
-                            } more)`}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <div className="text-secondary">
-                      No reviews yet. Be the first to review this product!
+                    )
+                  )}
+                  {reviewsData.length > 5 && (
+                    <div
+                      className="text-button more-review-btn text-center mt-2 underline cursor-pointer hover:text-black transition-colors"
+                      onClick={() => setShowAllReviews(!showAllReviews)}
+                    >
+                      {showAllReviews
+                        ? "Show Less Comments"
+                        : `View More Comments (${reviewsData.length - 5} more)`}
                     </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="text-secondary">
+                    No reviews yet. Be the first to review this product!
                   </div>
-                )}
-              </div>
-              <div id="form-review" className="form-review pt-6">
-                {/* Success and Error Messages */}
-                {reviewSuccessMessage && (
-                  <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                    {reviewSuccessMessage}
-                  </div>
-                )}
-                {reviewErrorMessage && (
-                  <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                    {reviewErrorMessage}
-                  </div>
-                )}
-                <div className="heading4">Write a Review</div>
-                <form
-                  className="grid sm:grid-cols-2 gap-4 gap-y-5 mt-6"
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const form = e.currentTarget;
-                    const formData = new FormData(form);
+                </div>
+              )}
+            </div>
+            <div id="form-review" className="form-review pt-6">
+              {/* Success and Error Messages */}
+              {reviewSuccessMessage && (
+                <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                  {reviewSuccessMessage}
+                </div>
+              )}
+              {reviewErrorMessage && (
+                <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                  {reviewErrorMessage}
+                </div>
+              )}
+              <div className="heading4">Write a Review</div>
+              <form
+                className="grid sm:grid-cols-2 gap-4 gap-y-5 mt-6"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const formData = new FormData(form);
 
-                    // Get the files from the input
-                    const fileInput = form.querySelector(
-                      'input[type="file"]'
-                    ) as HTMLInputElement;
-                    const files = fileInput?.files;
-                    const imageUrls: string[] = [];
+                  // Get the files from the input
+                  const fileInput = form.querySelector(
+                    'input[type="file"]'
+                  ) as HTMLInputElement;
+                  const files = fileInput?.files;
+                  const imageUrls: string[] = [];
 
-                    try {
-                      // Get current user
-                      const userStr = localStorage.getItem("user");
-                      if (!userStr) {
-                        setReviewErrorMessage(
-                          "Please login to submit a review"
-                        );
-                        return;
-                      }
-
-                      let user;
-                      try {
-                        user = JSON.parse(userStr);
-                      } catch (parseError) {
-                        console.error("Error parsing user data:", parseError);
-                        setReviewErrorMessage(
-                          "Invalid user data. Please login again."
-                        );
-                        return;
-                      }
-
-                      // Validate user object
-                      if (!user || !user.uid || !user.name || !user.email) {
-                        setReviewErrorMessage(
-                          "Invalid user data. Please login again."
-                        );
-                        return;
-                      }
-
-                      // Upload images if any
-                      if (files && files.length > 0) {
-                        for (let i = 0; i < files.length; i++) {
-                          const file = files[i];
-                          const fileRef = storageRef(
-                            storage,
-                            `reviews/${productMain.id}/${Date.now()}_${
-                              file.name
-                            }`
-                          );
-                          await uploadBytes(fileRef, file);
-                          const url = await getDownloadURL(fileRef);
-                          imageUrls.push(url);
-                        }
-                      }
-
-                      // Validate rating
-                      if (reviewRating === 0) {
-                        setReviewErrorMessage(
-                          "Please select a rating before submitting your review"
-                        );
-                        return;
-                      }
-
-                      // Validate required fields
-                      const title = formData.get("title")?.toString().trim();
-                      const message = formData
-                        .get("message")
-                        ?.toString()
-                        .trim();
-
-                      if (!title || title.length < 3) {
-                        setReviewErrorMessage(
-                          "Please enter a review title with at least 3 characters"
-                        );
-                        return;
-                      }
-
-                      if (!message || message.length < 10) {
-                        setReviewErrorMessage(
-                          "Please enter a review message with at least 10 characters"
-                        );
-                        return;
-                      }
-
-                      // Create review object
-                      const review = {
-                        title: title,
-                        message: message,
-                        rating: reviewRating,
-                        images: imageUrls,
-                        userId: user.uid,
-                        userName: user.name,
-                        userEmail: user.email,
-                        createdAt: new Date().toISOString(),
-                        productId: productMain.id,
-                      };
-
-                      // Save to Firebase
-                      console.log("🔥 Submitting review:", {
-                        productId: productMain.id,
-                        userId: user.uid,
-                        userName: user.name,
-                        title: title,
-                        rating: reviewRating,
-                        messageLength: message.length,
-                        imageCount: imageUrls.length,
-                      });
-
-                      const reviewsRef = ref(
-                        database,
-                        `/products/${productMain.id}/reviews/${Date.now()}`
-                      );
-                      await set(reviewsRef, review);
-
-                      console.log("✅ Review submitted successfully");
-
-                      setReviewSuccessMessage("Review submitted successfully!");
-                      setReviewErrorMessage(null);
-                      form.reset();
-                      setReviewRating(0);
-
-                      // Refresh reviews data
-                      fetchReviewsData(productMain.id);
-
-                      // Clear success message after 5 seconds
-                      setTimeout(() => {
-                        setReviewSuccessMessage(null);
-                      }, 5000);
-                    } catch (error) {
-                      console.error("Error submitting review:", error);
-
-                      // Provide more specific error messages
-                      let errorMessage =
-                        "Failed to submit review. Please try again.";
-
-                      if (error instanceof Error) {
-                        if (error.message.includes("permission")) {
-                          errorMessage =
-                            "You do not have permission to submit a review. Please check your login status.";
-                        } else if (error.message.includes("network")) {
-                          errorMessage =
-                            "Network error. Please check your internet connection and try again.";
-                        } else if (error.message.includes("storage")) {
-                          errorMessage =
-                            "Error uploading images. Please try again with smaller images.";
-                        } else if (error.message.includes("database")) {
-                          errorMessage =
-                            "Database error. Please try again in a moment.";
-                        }
-                      }
-
-                      setReviewErrorMessage(errorMessage);
-                      setReviewSuccessMessage(null);
+                  try {
+                    // Get current user
+                    const userStr = localStorage.getItem("user");
+                    if (!userStr) {
+                      setReviewErrorMessage("Please login to submit a review");
+                      return;
                     }
-                  }}
-                >
-                  <div className="title col-span-full">
-                    <input
-                      className="border-line px-4 pt-3 pb-3 w-full rounded-lg"
-                      id="title"
-                      name="title"
-                      type="text"
-                      placeholder="Review Title *"
-                      required
-                      onChange={() => setReviewErrorMessage(null)}
+
+                    let user;
+                    try {
+                      user = JSON.parse(userStr);
+                    } catch (parseError) {
+                      console.error("Error parsing user data:", parseError);
+                      setReviewErrorMessage(
+                        "Invalid user data. Please login again."
+                      );
+                      return;
+                    }
+
+                    // Validate user object
+                    if (!user || !user.uid || !user.name || !user.email) {
+                      setReviewErrorMessage(
+                        "Invalid user data. Please login again."
+                      );
+                      return;
+                    }
+
+                    // Upload images if any
+                    if (files && files.length > 0) {
+                      for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const fileRef = storageRef(
+                          storage,
+                          `reviews/${productMain.id}/${Date.now()}_${file.name}`
+                        );
+                        await uploadBytes(fileRef, file);
+                        const url = await getDownloadURL(fileRef);
+                        imageUrls.push(url);
+                      }
+                    }
+
+                    // Validate rating
+                    if (reviewRating === 0) {
+                      setReviewErrorMessage(
+                        "Please select a rating before submitting your review"
+                      );
+                      return;
+                    }
+
+                    // Validate required fields
+                    const title = formData.get("title")?.toString().trim();
+                    const message = formData.get("message")?.toString().trim();
+
+                    if (!title || title.length < 3) {
+                      setReviewErrorMessage(
+                        "Please enter a review title with at least 3 characters"
+                      );
+                      return;
+                    }
+
+                    if (!message || message.length < 10) {
+                      setReviewErrorMessage(
+                        "Please enter a review message with at least 10 characters"
+                      );
+                      return;
+                    }
+
+                    // Create review object
+                    const review = {
+                      title: title,
+                      message: message,
+                      rating: reviewRating,
+                      images: imageUrls,
+                      userId: user.uid,
+                      userName: user.name,
+                      userEmail: user.email,
+                      createdAt: new Date().toISOString(),
+                      productId: productMain.id,
+                    };
+
+                    // Save to Firebase
+                    console.log("🔥 Submitting review:", {
+                      productId: productMain.id,
+                      userId: user.uid,
+                      userName: user.name,
+                      title: title,
+                      rating: reviewRating,
+                      messageLength: message.length,
+                      imageCount: imageUrls.length,
+                    });
+
+                    const reviewsRef = ref(
+                      database,
+                      `/products/${productMain.id}/reviews/${Date.now()}`
+                    );
+                    await set(reviewsRef, review);
+
+                    console.log("✅ Review submitted successfully");
+
+                    setReviewSuccessMessage("Review submitted successfully!");
+                    setReviewErrorMessage(null);
+                    form.reset();
+                    setReviewRating(0);
+
+                    // Refresh reviews data
+                    fetchReviewsData(productMain.id);
+
+                    // Clear success message after 5 seconds
+                    setTimeout(() => {
+                      setReviewSuccessMessage(null);
+                    }, 5000);
+                  } catch (error) {
+                    console.error("Error submitting review:", error);
+
+                    // Provide more specific error messages
+                    let errorMessage =
+                      "Failed to submit review. Please try again.";
+
+                    if (error instanceof Error) {
+                      if (error.message.includes("permission")) {
+                        errorMessage =
+                          "You do not have permission to submit a review. Please check your login status.";
+                      } else if (error.message.includes("network")) {
+                        errorMessage =
+                          "Network error. Please check your internet connection and try again.";
+                      } else if (error.message.includes("storage")) {
+                        errorMessage =
+                          "Error uploading images. Please try again with smaller images.";
+                      } else if (error.message.includes("database")) {
+                        errorMessage =
+                          "Database error. Please try again in a moment.";
+                      }
+                    }
+
+                    setReviewErrorMessage(errorMessage);
+                    setReviewSuccessMessage(null);
+                  }
+                }}
+              >
+                <div className="title col-span-full">
+                  <input
+                    className="border border-gray-400 px-4 pt-3 pb-3 w-full rounded-lg"
+                    id="title"
+                    name="title"
+                    type="text"
+                    placeholder="Review Title *"
+                    required
+                    onChange={() => setReviewErrorMessage(null)}
+                  />
+                </div>
+                <div className="col-span-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Rating *
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <InteractiveRate
+                      rating={reviewRating}
+                      onRatingChange={(rating) => {
+                        setReviewRating(rating);
+                        setReviewErrorMessage(null);
+                      }}
+                      size={24}
                     />
+                    <span className="text-sm text-gray-500">
+                      {reviewRating > 0
+                        ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}`
+                        : "Click to rate"}
+                    </span>
                   </div>
-                  <div className="col-span-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Rating *
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <InteractiveRate
-                        rating={reviewRating}
-                        onRatingChange={(rating) => {
-                          setReviewRating(rating);
-                          setReviewErrorMessage(null);
-                        }}
-                        size={24}
-                      />
-                      <span className="text-sm text-gray-500">
-                        {reviewRating > 0
-                          ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}`
-                          : "Click to rate"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="col-span-full message">
-                    <textarea
-                      className="border border-line px-4 py-3 w-full rounded-lg"
-                      id="message"
-                      name="message"
-                      placeholder="Your Review *"
-                      required
-                      onChange={() => setReviewErrorMessage(null)}
-                    ></textarea>
-                  </div>
-                  <div className="col-span-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload Images (Optional)
-                    </label>
+                </div>
+                <div className="col-span-full message">
+                  <textarea
+                    className="border border-gray-400 px-4 py-3 w-full rounded-lg"
+                    id="message"
+                    name="message"
+                    placeholder="Your Review *"
+                    required
+                    onChange={() => setReviewErrorMessage(null)}
+                  ></textarea>
+                </div>
+                <div className="col-span-full">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Upload Images (Optional)
+                  </label>
+                  <div className=" border border-gray-400 p-2 rounded-lg w-40  text-white">
                     <input
                       type="file"
                       multiple
                       accept="image/*"
-                      className="block w-full text-sm text-gray-500
+                      className="block border border-gray-400 w-full text-sm text-gray-500
                                         file:mr-4 file:py-2 file:px-4
                                         file:rounded-full file:border-0
                                         file:text-sm file:font-semibold
@@ -1880,19 +1877,19 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                                         file:duration-200"
                     />
                   </div>
-                  <div className="col-span-full sm:pt-3">
-                    <button
-                      type="submit"
-                      className="button-main bg-white text-black border border-black"
-                    >
-                      Submit Review
-                    </button>
-                  </div>
-                </form>
-              </div>
+                </div>
+                <div className="col-span-full sm:pt-3">
+                  <button
+                    type="submit"
+                    className="button-main bg-white text-black border border-black"
+                  >
+                    Submit Review
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        )}
+        </div>
 
         <div className="related-product md:py-20 py-10">
           <div className="container">
