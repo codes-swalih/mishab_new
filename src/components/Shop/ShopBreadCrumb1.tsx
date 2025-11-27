@@ -493,7 +493,7 @@ const ShopBreadCrumb1: React.FC<Props> = ({
               </div>
             </div>
           </div>
-          {categoryBanner && (
+          {/* {categoryBanner && (
             <div className="container pb-10">
               <div className="w-full">
                 <Image
@@ -506,7 +506,7 @@ const ShopBreadCrumb1: React.FC<Props> = ({
                 />
               </div>
             </div>
-          )}
+          )} */}
         </div>
       </div>
 
