@@ -30,10 +30,10 @@ const TRUST_BADGES = [
 
 export default function TrustBadges() {
   return (
-    <div className="w-full bg-gradient-to-b from-gray-50 to-white py-8 px-4 rounded-2xl shadow-lg">
+    <div className="w-full bg-white md:bg-gradient-to-b md:from-gray-50 md:to-white py-3 md:py-8 px-3 md:px-4 rounded-2xl md:shadow-lg">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-10">
+        {/* Header – desktop only to save vertical space on mobile */}
+        <div className="hidden md:block text-center mb-10">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
             Why Shop With Us?
           </h2>
@@ -42,43 +42,57 @@ export default function TrustBadges() {
           </p>
         </div>
 
-        {/* Badges Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        {/* Mobile: compact horizontal row  |  Desktop: 4-column grid */}
+        <div
+          className="  grid grid-cols-2 gap-3
+  md:grid-cols-4 md:gap-6
+"
+        >
           {TRUST_BADGES.map((badge, idx) => {
             const Icon = badge.icon;
             return (
               <div
                 key={idx}
-                className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-transparent hover:-translate-y-1"
+                className="
+                  group relative flex items-center gap-3 bg-white
+                  rounded-xl px-3 py-2 shadow-sm border border-gray-100
+                  flex-shrink-0 md:min-w-[170px]
+                  hover:shadow-md hover:-translate-y-0.5
+                  transition-all duration-300
+                  md:flex-col md:text-center md:rounded-2xl md:p-6 md:flex-shrink
+                "
               >
-                {/* Gradient Background on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Gradient background on hover – desktop only */}
+                <div className="hidden md:block absolute inset-0 bg-gradient-to-br from-gray-50 to-white rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                {/* Content */}
-                <div className="relative z-10 flex flex-col items-center text-center">
-                  {/* Icon Container */}
-                  <div
-                    className={`w-16 h-16 md:w-20 md:h-20 rounded-full  p- mb-4 group-hover:scale-110 transition-transform duration-300`}
-                  >
-                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center">
+                <div className="relative z-10 flex items-center gap-3 md:flex-col md:items-center md:text-center w-full">
+                  {/* Icon */}
+                  <div className="flex-shrink-0">
+                    <div className="w-10 h-10 md:w-16 md:h-16 rounded-full bg-gray-100 md:bg-white flex items-center justify-center">
                       <Icon
-                        className={`w-8 h-8 md:w-10 md:h-10 text-black`}
+                        className="w-5 h-5 md:w-8 md:h-8 text-black"
                         strokeWidth={2}
                       />
                     </div>
                   </div>
 
                   {/* Text */}
-                  <h3 className="text-sm md:text-base font-bold text-gray-900 mb-1">
-                    {badge.label}
-                  </h3>
-                  <p className="text-xs md:text-sm text-gray-600">
-                    {badge.description}
-                  </p>
+                  <div className="flex-1">
+                    <h3 className="text-xs md:text-base font-semibold text-gray-900">
+                      {badge.label}
+                    </h3>
+                    <p className="text-[10px] md:text-sm text-gray-600">
+                      {badge.description}
+                    </p>
+                  </div>
 
-                  {/* Decorative Dot */}
+                  {/* Decorative dot – desktop only */}
                   <div
-                    className={`mt-4 w-1.5 h-1.5 rounded-full bg-gradient-to-br ${badge.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                    className={`
+                      hidden md:block mt-4 w-1.5 h-1.5 rounded-full
+                      bg-gradient-to-br ${badge.color}
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                    `}
                   />
                 </div>
               </div>
@@ -86,32 +100,20 @@ export default function TrustBadges() {
           })}
         </div>
 
-        {/* Optional: Stats Bar */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <div className="grid grid-cols-3 gap-4 md:gap-8 text-center">
+        {/* Stats Bar – desktop only */}
+        <div className="hidden md:block mt-12 pt-8 border-t border-gray-200">
+          <div className="grid grid-cols-3 gap-8 text-center">
             <div>
-              <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                50K+
-              </div>
-              <div className="text-xs md:text-sm text-gray-600">
-                Happy Customers
-              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">50K+</div>
+              <div className="text-sm text-gray-600">Happy Customers</div>
             </div>
             <div>
-              <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                4.8★
-              </div>
-              <div className="text-xs md:text-sm text-gray-600">
-                Average Rating
-              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">4.8★</div>
+              <div className="text-sm text-gray-600">Average Rating</div>
             </div>
             <div>
-              <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
-                99%
-              </div>
-              <div className="text-xs md:text-sm text-gray-600">
-                Satisfaction Rate
-              </div>
+              <div className="text-3xl font-bold text-gray-900 mb-1">99%</div>
+              <div className="text-sm text-gray-600">Satisfaction Rate</div>
             </div>
           </div>
         </div>

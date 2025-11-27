@@ -154,7 +154,7 @@ const Product: React.FC<ProductProps> = ({ data, type, style }) => {
                         ?.image ?? data.thumbImage[0]
                     }
                     width={500}
-                    height={500}
+                    height={400}
                     alt={data.name}
                     className={`w-full h-full object-cover transition-all duration-500 ${
                       imageLoaded
@@ -170,7 +170,7 @@ const Product: React.FC<ProductProps> = ({ data, type, style }) => {
                       key={index}
                       src={img}
                       width={500}
-                      height={500}
+                      height={400}
                       alt={data.name}
                       className={`w-full h-full  object-cover transition-all duration-500 ${
                         imageLoaded

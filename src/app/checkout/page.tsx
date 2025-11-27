@@ -1850,7 +1850,7 @@ const Checkout = () => {
                 <div className="block-button md:mt-10 mt-6">
                   <button
                     type="submit"
-                    className="w-full bg-green text-white py-4 px-6 rounded-lg font-semibold text-lg hover:bg-green/90 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="w-full bg-black text-white py-2 md:py-4 px-6 rounded-lg font-semibold text-lg hover:bg-green/90 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                     disabled={isLoading}
                   >
                     {isLoading
@@ -1864,7 +1864,7 @@ const Checkout = () => {
             </div>
 
             {/* Order Summary */}
-            <div className="xl:w-1/3 xl:pl-12 w-full">
+            <div className="xl:w-1/3 xl:pl-12 w-full mt-10 md:mt-0">
               <div className="checkout-block bg-surface  rounded-2xl">
                 <div className="heading5 pb-3">
                   {buyNow === "true" ? "Buy Now - Your Order" : "Your Order"}
@@ -2006,7 +2006,7 @@ const Checkout = () => {
                   <div className="text-title">
                     {isFreeShippingApplied ? (
                       <>
-                        <span className="text-green">Free</span>
+                        <span className="text-black">Free</span>
                         {appliedCoupon && (
                           <div className="text-xs text-green mt-1">
                             Applied: {appliedCoupon.code}

@@ -339,8 +339,114 @@ const MenuFurniture: React.FC<Props> = ({ props }) => {
                   {(searchKeyword.trim().length > 0 ||
                     (isSearchFocused && recentSearches.length > 0)) && (
                     <div className="absolute top-full mt-2 w-full bg-white border border-line rounded-lg shadow-md p-3">
-                      {/* keep your existing dropdown content here unchanged */}
-                      {/* ... */}
+                      {(searchKeyword.trim().length > 0 ||
+                        (isSearchFocused && recentSearches.length > 0)) && (
+                        <div className="absolute top-full mt-2 w-full bg-white border border-line rounded-lg shadow-md p-3">
+                          {searchKeyword.trim().length > 0 ? (
+                            <>
+                              {searching ? (
+                                <div className="space-y-2">
+                                  {Array.from({ length: 4 }).map((_, idx) => (
+                                    <div
+                                      key={`sr-skel-${idx}`}
+                                      className="flex items-center gap-3 animate-pulse"
+                                    >
+                                      <div className="w-10 h-10 bg-gray-200 rounded" />
+                                      <div className="flex-1">
+                                        <div className="h-3 bg-gray-200 rounded w-2/3" />
+                                        <div className="h-3 bg-gray-200 rounded w-1/3 mt-1" />
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <>
+                                  {searchResults.length === 0 ? (
+                                    <div className="caption1 text-secondary">
+                                      No results
+                                    </div>
+                                  ) : (
+                                    <ul className="space-y-2">
+                                      {searchResults.map((p) => (
+                                        <li key={p.id}>
+                                          <Link
+                                            href={`/product/default?id=${p.id}`}
+                                            className="flex items-center gap-3 hover:bg-surface px-2 py-2 rounded"
+                                          >
+                                            <Image
+                                              src={
+                                                p.thumbImage?.[0] ||
+                                                p.images?.[0] ||
+                                                "/images/other/404-img.png"
+                                              }
+                                              alt={p.name}
+                                              width={40}
+                                              height={40}
+                                              className="w-10 h-10 rounded object-cover"
+                                            />
+                                            <div className="flex-1">
+                                              <div className="caption1">
+                                                {p.name}
+                                              </div>
+                                              <div className="caption2 text-secondary">
+                                                ₹
+                                                {(p as any).salePrice ??
+                                                  p.price}
+                                                .00
+                                              </div>
+                                            </div>
+                                          </Link>
+                                        </li>
+                                      ))}
+                                      <li>
+                                        <button
+                                          className="caption1 text-black underline mt-1"
+                                          onClick={() =>
+                                            handleSearch(searchKeyword)
+                                          }
+                                        >
+                                          See all results
+                                        </button>
+                                      </li>
+                                    </ul>
+                                  )}
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <div>
+                              <div className="caption1 text-secondary mb-2">
+                                Recent searches
+                              </div>
+                              <ul className="flex flex-wrap gap-2">
+                                {recentSearches.map((term, idx) => (
+                                  <li key={`recent-${idx}`}>
+                                    <button
+                                      className="px-3 py-1 rounded-full bg-surface caption2 hover:bg-gray-100"
+                                      onClick={() => handleSearch(term)}
+                                    >
+                                      {term}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <div className="mt-2">
+                                <button
+                                  className="caption2 text-secondary hover:underline"
+                                  onClick={() => {
+                                    setRecentSearches([]);
+                                    try {
+                                      localStorage.removeItem("recentSearches");
+                                    } catch {}
+                                  }}
+                                >
+                                  Clear recent searches
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -361,7 +467,55 @@ const MenuFurniture: React.FC<Props> = ({ props }) => {
                       openLoginPopup ? "open" : ""
                     }`}
                   >
-                    {/* keep your login popup content exactly as before */}
+                    {!isLoggedIn ? (
+                      <>
+                        <Link
+                          href={"/login"}
+                          className="button-main w-full text-center"
+                        >
+                          Login
+                        </Link>
+                        <div className="text-secondary text-center mt-3 pb-4">
+                          Don&apos;t have an account?
+                          <Link
+                            href={"/register"}
+                            className="text-black pl-1 hover:underline"
+                          >
+                            Register
+                          </Link>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-center mb-4">
+                          <div className="text-black font-medium">
+                            Welcome back!
+                          </div>
+                          <div className="text-secondary text-sm">
+                            {user?.email || user?.displayName || "User"}
+                          </div>
+                        </div>
+                        <Link
+                          href={"/my-account"}
+                          className="button-main w-full text-center"
+                        >
+                          My Profile
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="button-main bg-white text-black border border-black w-full text-center mt-3"
+                        >
+                          Logout
+                        </button>
+                      </>
+                    )}
+                    <div className="bottom mt-4 pt-4 border-t border-line"></div>
+                    <Link
+                      href={"/pages/contact"}
+                      className="body1 hover:underline"
+                    >
+                      Support
+                    </Link>
                   </div>
                 </div>
 
@@ -397,9 +551,9 @@ const MenuFurniture: React.FC<Props> = ({ props }) => {
       {/* Mobile search row (below header) */}
       {/* hide the mobile search row on product detail page */}
       {isHome && (
-        <div className="lg:hidden w-full  border-t border-line">
+        <div className="lg:hidden w-full border-t border-line relative z-[60]">
           <div className="container mx-auto pt-5">
-            <div className="form-search relative z-[1]">
+            <div className="form-search relative">
               <Icon.MagnifyingGlass
                 size={18}
                 className="absolute text-black left-3 top-1/2 -translate-y-1/2 cursor-pointer"
@@ -419,9 +573,10 @@ const MenuFurniture: React.FC<Props> = ({ props }) => {
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
               />
+
               {(searchKeyword.trim().length > 0 ||
                 (isSearchFocused && recentSearches.length > 0)) && (
-                <div className="absolute top-full mt-2 w-full bg-white border border-line rounded-lg shadow-md p-3">
+                <div className="absolute left-0 right-0 top-full mt-2 z-[70] bg-white border border-line rounded-lg shadow-md p-3">
                   {searchKeyword.trim().length > 0 ? (
                     <>
                       {searching ? (
@@ -439,51 +594,48 @@ const MenuFurniture: React.FC<Props> = ({ props }) => {
                             </div>
                           ))}
                         </div>
+                      ) : searchResults.length === 0 ? (
+                        <div className="caption1 text-secondary">
+                          No results
+                        </div>
                       ) : (
-                        <>
-                          {searchResults.length === 0 ? (
-                            <div className="caption1 text-secondary">
-                              No results
-                            </div>
-                          ) : (
-                            <ul className="space-y-2">
-                              {searchResults.map((p) => (
-                                <li key={p.id}>
-                                  <Link
-                                    href={`/product/default?id=${p.id}`}
-                                    className="flex items-center gap-3 hover:bg-surface px-2 py-2 rounded"
-                                  >
-                                    <Image
-                                      src={
-                                        p.thumbImage?.[0] ||
-                                        p.images?.[0] ||
-                                        "/images/other/404-img.png"
-                                      }
-                                      alt={p.name}
-                                      width={40}
-                                      height={40}
-                                      className="w-10 h-10 rounded object-cover"
-                                    />
-                                    <div className="flex-1">
-                                      <div className="caption1">{p.name}</div>
-                                      <div className="caption2 text-secondary">
-                                        ₹{(p as any).salePrice ?? p.price}.00
-                                      </div>
-                                    </div>
-                                  </Link>
-                                </li>
-                              ))}
-                              <li>
-                                <button
-                                  className="caption1 text-black underline mt-1"
-                                  onClick={() => handleSearch(searchKeyword)}
-                                >
-                                  See all results
-                                </button>
-                              </li>
-                            </ul>
-                          )}
-                        </>
+                        <ul className="space-y-2">
+                          {searchResults.map((p) => (
+                            <li key={p.id}>
+                              <Link
+                                href={`/product/default?id=${p.id}`}
+                                className="flex items-center gap-3 hover:bg-surface px-2 py-2 rounded"
+                                onClick={() => setSearchKeyword("")}
+                              >
+                                <Image
+                                  src={
+                                    p.thumbImage?.[0] ||
+                                    p.images?.[0] ||
+                                    "/images/other/404-img.png"
+                                  }
+                                  alt={p.name}
+                                  width={40}
+                                  height={40}
+                                  className="w-10 h-10 rounded object-cover"
+                                />
+                                <div className="flex-1">
+                                  <div className="caption1">{p.name}</div>
+                                  <div className="caption2 text-secondary">
+                                    ₹{(p as any).salePrice ?? p.price}.00
+                                  </div>
+                                </div>
+                              </Link>
+                            </li>
+                          ))}
+                          <li>
+                            <button
+                              className="caption1 text-black underline mt-1"
+                              onClick={() => handleSearch(searchKeyword)}
+                            >
+                              See all results
+                            </button>
+                          </li>
+                        </ul>
                       )}
                     </>
                   ) : (

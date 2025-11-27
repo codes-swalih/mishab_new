@@ -768,12 +768,11 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                 className="mySwiper2 md:rounded-2xl overflow-hidden"
                 loop={true}
                 autoplay={{
-                  delay: 2200,
+                  delay: 3000,
                   disableOnInteraction: false,
-                  // reverseDirection is supported in newer Swiper; if version doesn't support, replace with negative speed trick
-                  reverseDirection: true,
                 }}
-                speed={1400}
+                speed={900}
+                grabCursor={true}
                 pagination={{ clickable: true }}
               >
                 {productMain.images.map((item, index) => (
@@ -845,10 +844,11 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                     swiperRef.current = swiper;
                   }}
                   autoplay={{
-                    delay: 2200,
+                    delay: 3000,
                     disableOnInteraction: false,
-                    reverseDirection: true,
                   }}
+                  speed={900}
+                  grabCursor={true}
                   pagination={{ clickable: true }}
                 >
                   {productMain.images.map((item, index) => (
@@ -890,6 +890,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                   height: 8px;
                   margin: 0 6px !important;
                 }
+                /* popup styling */
                 :global(.popup-img) {
                   position: fixed;
                   inset: 0;
@@ -902,6 +903,21 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                 }
                 :global(.popup-img:not(.open)) {
                   display: none;
+                }
+
+                /* Smooth the slide transition with a nicer easing curve */
+                :global(.swiper-wrapper) {
+                  transition-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1) !important;
+                }
+                :global(.swiper-slide) {
+                  backface-visibility: hidden;
+                  -webkit-backface-visibility: hidden;
+                }
+                /* Ensure slide transform transitions are smooth and consistent */
+                :global(.swiper-wrapper),
+                :global(.swiper-slide) {
+                  transition-duration: 900ms !important;
+                  transition-property: transform !important;
                 }
               `}</style>
             </div>

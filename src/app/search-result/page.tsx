@@ -177,10 +177,10 @@ const SearchResult = () => {
     return (
         <>
              <div id="header" className='relative w-full'>
-        <BannerTop props="bg-green py-3" textColor='text-black' bgLine='bg-black' />
+        <BannerTop props="bg-black py-3" textColor='text-white' bgLine='bg-black' />
          <MenuFurniture props="bg-white" />
          <MenuCategory />
-         <SliderFurniture />
+         {/* <SliderFurniture /> */}
         </div>
 
             <div className="shop-product breadcrumb1 lg:py-20 md:py-14 py-10">
@@ -192,7 +192,7 @@ const SearchResult = () => {
                                 <input
                                     type="text"
                                     placeholder='Search...'
-                                    className='caption1 w-full h-full pl-4 md:pr-[150px] pr-32 rounded-xl border border-line'
+                                    className='caption1 w-full h-full pl-4 md:pr-[150px] pr-32 rounded-xl border border-gray-400'
                                     value={searchKeyword}
                                     onChange={(e) => setSearchKeyword(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSearch(searchKeyword)}

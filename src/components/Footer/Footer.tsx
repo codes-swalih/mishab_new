@@ -77,19 +77,19 @@ const Footer = () => {
               </h3>
               <nav className="flex flex-col space-y-2.5">
                 <Link
-                  href="/shop/women"
+                  href="#"
                   className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
                   Women
                 </Link>
                 <Link
-                  href="/shop/men"
+                  href="#"
                   className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
                   Men
                 </Link>
                 <Link
-                  href="/shop/clothes"
+                  href="#"
                   className="text-sm text-gray-400 hover:text-white transition-colors"
                 >
                   Clothes

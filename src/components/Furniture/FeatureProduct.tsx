@@ -270,17 +270,17 @@ const FeatureProduct: React.FC<Props> = ({ start = 0, limit = 8 }) => {
         <div className="container">
           <div className=" flex flex-col items-start text-start">
             <div className=" flex items-center justify-between w-full">
-              <div className="heading3">
+              <div className="heading4 md:heading3">
                 {isShowingTrending ? "Trending Products" : "Featured Products"}
               </div>
-              <div className=" flex items-center gap-2">
+              {/* <div className=" flex items-center gap-2">
                 <h1 className=" text-xs text-gray-400">see all</h1>
                 <div className=" w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs ">
                   <h1>
                     <Icon.ArrowRight />
                   </h1>
                 </div>
-              </div>
+              </div> */}
             </div>
             {isShowingTrending && (
               <div className="text-secondary mt-2">

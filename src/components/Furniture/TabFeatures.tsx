@@ -204,15 +204,15 @@ const TabFeatures: React.FC<Props> = ({ start, limit }) => {
       <div className="best-sellers-section md:pt-20 pt-8">
         <div className="container">
           <div className=" flex items-center justify-between w-full">
-            <div className="heading3">Best Sellers</div>
-            <div className=" flex items-center gap-2">
+            <div className="heading4 md:heading3">Best Sellers</div>
+            {/* <div className=" flex items-center gap-2">
               <h1 className=" text-xs text-gray-400">see all</h1>
               <div className=" w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs ">
                 <h1>
                   <Icon.ArrowRight />
                 </h1>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {bestSellers.length > 0 ? (
@@ -238,15 +238,15 @@ const TabFeatures: React.FC<Props> = ({ start, limit }) => {
       <div className="on-sale-section md:pt-20 pt-8">
         <div className="container">
           <div className=" flex items-center justify-between w-full">
-            <div className="heading3">On Sale</div>
-            <div className=" flex items-center gap-2">
+            <div className="heading4 md:heading3">On Sale</div>
+            {/* <div className=" flex items-center gap-2">
               <h1 className=" text-xs text-gray-400">see all</h1>
               <div className=" w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs ">
                 <h1>
                   <Icon.ArrowRight />
                 </h1>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {onSale.length > 0 ? (
@@ -272,15 +272,15 @@ const TabFeatures: React.FC<Props> = ({ start, limit }) => {
       <div className="new-arrivals-section md:pt-20 pt-8 md:pb-20 pb-10">
         <div className="container">
           <div className=" flex items-center justify-between w-full">
-            <div className="heading3">New Arrivals</div>
-            <div className=" flex items-center gap-2">
+            <div className="heading4 md:heading3">New Arrivals</div>
+            {/* <div className=" flex items-center gap-2">
               <h1 className=" text-xs text-gray-400">see all</h1>
               <div className=" w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-xs ">
                 <h1>
                   <Icon.ArrowRight />
                 </h1>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {newArrivals.length > 0 ? (
