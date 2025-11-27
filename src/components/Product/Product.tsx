@@ -111,7 +111,7 @@ const Product: React.FC<ProductProps> = ({ data, type, style }) => {
           {/* Modern Product Card */}
           <div
             onClick={() => handleDetailProduct(data.id)}
-            className="group relative rounded-2xl overflow-hidden drop-shadow-lg hover:shadow-2xl p-2 md:p-4 bg-gray-100 transition-all duration-300 cursor-pointer"
+            className="group relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl p-2 md:p-4 bg-gray-100 transition-all duration-300 cursor-pointer"
           >
             {/* Product Image Container */}
             <div className="relative aspect-square overflow-hidden rounded-xl ">
