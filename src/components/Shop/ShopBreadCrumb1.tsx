@@ -40,10 +40,17 @@ const ShopBreadCrumb1: React.FC<Props> = ({
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<
     string | null
   >();
+  // New multi-select states (backwards-compatible with single selectedBrandFilter)
+  const [selectedBrandFilters, setSelectedBrandFilters] = useState<string[]>(
+    []
+  );
   const [allBrands, setAllBrands] = useState<Brand[]>([]);
   const [selectedStyle, setSelectedStyle] = useState<string | null>();
+  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [selectedMaterial, setSelectedMaterial] = useState<string | null>();
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
   const [brand, setBrand] = useState<string | null>();
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({
     min: 0,
     max: 50000,
@@ -228,6 +235,13 @@ const ShopBreadCrumb1: React.FC<Props> = ({
   };
 
   const handleBrandFilter = (brandId: string) => {
+    // toggle within multi-select array
+    setSelectedBrandFilters((prev) =>
+      prev.includes(brandId)
+        ? prev.filter((b) => b !== brandId)
+        : [...prev, brandId]
+    );
+    // keep backwards compatibility: update single selectedBrandFilter for code that still uses it
     setSelectedBrandFilter((prevBrand) =>
       prevBrand === brandId ? null : brandId
     );
@@ -235,11 +249,20 @@ const ShopBreadCrumb1: React.FC<Props> = ({
   };
 
   const handleStyle = (style: string) => {
+    // multi-select styles
+    setSelectedStyles((prev) =>
+      prev.includes(style) ? prev.filter((s) => s !== style) : [...prev, style]
+    );
     setSelectedStyle((prevStyle) => (prevStyle === style ? null : style));
     setCurrentPage(0);
   };
 
   const handleMaterial = (material: string) => {
+    setSelectedMaterials((prev) =>
+      prev.includes(material)
+        ? prev.filter((m) => m !== material)
+        : [...prev, material]
+    );
     setSelectedMaterial((prevMaterial) =>
       prevMaterial === material ? null : material
     );
@@ -254,6 +277,10 @@ const ShopBreadCrumb1: React.FC<Props> = ({
   };
 
   const handleBrand = (brand: string) => {
+    // vendor selection multi
+    setSelectedVendors((prev) =>
+      prev.includes(brand) ? prev.filter((v) => v !== brand) : [...prev, brand]
+    );
     setBrand((prevBrand) => (prevBrand === brand ? null : brand));
     setCurrentPage(0);
   };
@@ -290,34 +317,21 @@ const ShopBreadCrumb1: React.FC<Props> = ({
     }
 
     let isBrandFilterMatched = true;
-    if (selectedBrandFilter) {
-      // Check if product has brands array and includes the selected brand
+    // if any brand filters selected, product must match at least one
+    if (selectedBrandFilters && selectedBrandFilters.length > 0) {
       const productBrands = (product as any).brands || [];
-      isBrandFilterMatched = productBrands.includes(selectedBrandFilter);
-      console.log(
-        `Filtering product "${product.name}" for brand "${selectedBrandFilter}":`,
-        {
-          productBrands,
-          selectedBrandFilter,
-          matches: isBrandFilterMatched,
-        }
+      isBrandFilterMatched = selectedBrandFilters.some((b) =>
+        productBrands.includes(b)
       );
     }
 
     let isStyleMatched = true;
-    if (selectedStyle) {
-      // Check if product has style array and includes the selected style
+    if (selectedStyles && selectedStyles.length > 0) {
       const productStyles = (product as any).style || [];
-      isStyleMatched = productStyles.some(
-        (style: string) => style.toLowerCase() === selectedStyle.toLowerCase()
-      );
-      console.log(
-        `Filtering product "${product.name}" for style "${selectedStyle}":`,
-        {
-          productStyles,
-          selectedStyle,
-          matches: isStyleMatched,
-        }
+      isStyleMatched = selectedStyles.some((sel) =>
+        productStyles.some(
+          (style: string) => style.toLowerCase() === sel.toLowerCase()
+        )
       );
     }
 
@@ -331,24 +345,17 @@ const ShopBreadCrumb1: React.FC<Props> = ({
     }
 
     let isMaterialMatched = true;
-    if (selectedMaterial) {
-      // Check if product has primaryMaterial array and includes the selected material
+    if (selectedMaterials && selectedMaterials.length > 0) {
       const productMaterials = (product as any).primaryMaterial || [];
-      isMaterialMatched = productMaterials.some(
-        (material: string) => material === selectedMaterial
-      );
-      console.log(
-        `Filtering product "${product.name}" for material "${selectedMaterial}":`,
-        {
-          productMaterials,
-          selectedMaterial,
-          matches: isMaterialMatched,
-        }
+      isMaterialMatched = selectedMaterials.some((sel) =>
+        productMaterials.some((mat: string) => mat === sel)
       );
     }
 
     let isBrandMatched = true;
-    if (brand) {
+    if (selectedVendors && selectedVendors.length > 0) {
+      isBrandMatched = selectedVendors.includes((product as any).vendor);
+    } else if (brand) {
       isBrandMatched = (product as any).vendor === brand;
     }
 
@@ -378,11 +385,13 @@ const ShopBreadCrumb1: React.FC<Props> = ({
 
   const totalProducts = filteredData.length;
   const selectedType = type;
-  const selectedBrandName = selectedBrandFilter
-    ? allBrands.find((b) => b.id === selectedBrandFilter)?.name
-    : null;
-  const selectedStyleName = selectedStyle;
-  const selectedMaterialName = selectedMaterial;
+  // compute selected names/labels for UI chips
+  const selectedBrandNames = selectedBrandFilters
+    .map((id) => allBrands.find((b) => b.id === id)?.name || id)
+    .filter(Boolean);
+  const selectedStyleNames = selectedStyles;
+  const selectedMaterialNames = selectedMaterials;
+  const selectedVendorsSelected = selectedVendors;
   const selectedBrand = brand;
 
   if (filteredData.length === 0) {
@@ -439,9 +448,13 @@ const ShopBreadCrumb1: React.FC<Props> = ({
     setSortOption("");
     setType(null);
     setSelectedBrandFilter(null);
+    setSelectedBrandFilters([]);
     setSelectedStyle(null);
+    setSelectedStyles([]);
     setSelectedMaterial(null);
+    setSelectedMaterials([]);
     setBrand(null);
+    setSelectedVendors([]);
     setPriceRange({ min: actualPriceRange.min, max: actualPriceRange.max });
     setCurrentPage(0);
     handleType(null);
@@ -510,10 +523,237 @@ const ShopBreadCrumb1: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="shop-product breadcrumb1 lg:py-20 md:py-14 py-10">
+      <div className="shop-product breadcrumb1 lg:py-20 md:py-14 py-5">
         <div className="container">
+          {/* Mobile-only single Filters collapsible (md and up keep sidebar) */}
+          <div className="md:hidden mb-6">
+            <details className="w-full">
+              <summary className="flex items-center justify-between px-4 py-3 rounded-lg bg-white border border-line cursor-pointer">
+                <span className="flex items-center gap-2">
+                  <Icon.Funnel size={18} />
+                  Filters
+                </span>
+                <Icon.CaretDown size={16} />
+              </summary>
+              <div className="p-4 bg-white border-t border-line">
+                {/* Replicate sidebar filters here for mobile */}
+                <div className="mb-4">
+                  <div className="heading6">Sub Categories</div>
+                  <div className="list-type mt-2">
+                    {categoryId ? (
+                      allSubCategories.length > 0 ? (
+                        allSubCategories.map((subCategory, index) => (
+                          <div
+                            key={index}
+                            className={`item flex items-center justify-between cursor-pointer ${
+                              dataType === subCategory.id ? "active" : ""
+                            }`}
+                            onClick={() => handleType(subCategory.id)}
+                          >
+                            <div className="text-secondary capitalize">
+                              {subCategory.name}
+                            </div>
+                            <div className="text-secondary2">
+                              (
+                              {
+                                data.filter((d) => {
+                                  const productSubCategories =
+                                    (d as any).subCategories || [];
+                                  const productSubCategory = (d as any)
+                                    .subCategory;
+                                  return (
+                                    productSubCategories.includes(
+                                      subCategory.id
+                                    ) || productSubCategory === subCategory.id
+                                  );
+                                }).length
+                              }
+                              )
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-secondary text-sm">
+                          No subcategories available
+                        </div>
+                      )
+                    ) : (
+                      <div className="text-secondary text-sm">
+                        Select a category to view subcategories
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <div className="heading6">Brands</div>
+                  <div className="list-brand mt-2">
+                    {allBrands.length > 0 ? (
+                      allBrands.map((b, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between mt-2"
+                        >
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedBrandFilters.includes(b.id)}
+                              onChange={() => handleBrandFilter(b.id)}
+                            />
+                            <span className="capitalize">{b.name}</span>
+                          </label>
+                          <div className="text-secondary2">
+                            (
+                            {
+                              data.filter((d) =>
+                                ((d as any).brands || []).includes(b.id)
+                              ).length
+                            }
+                            )
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-secondary text-sm">
+                        No brands available
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <div className="heading6">Style & Design</div>
+                  <div className="list-style mt-2">
+                    {[
+                      "Modern",
+                      "Scandinavian",
+                      "Contemporary",
+                      "Industrial",
+                      "Minimalist",
+                      "Bohemian",
+                      "Traditional",
+                    ].map((style, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between mt-2"
+                      >
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedStyles.includes(style)}
+                            onChange={() => handleStyle(style)}
+                          />
+                          <span className="capitalize">{style}</span>
+                        </label>
+                        <div className="text-secondary2">
+                          (
+                          {
+                            data.filter((d) =>
+                              ((d as any).style || []).some(
+                                (s: string) =>
+                                  s.toLowerCase() === style.toLowerCase()
+                              )
+                            ).length
+                          }
+                          )
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <div className="heading6">Price Range</div>
+                  <div className="mt-3">
+                    <Slider
+                      range
+                      value={[priceRange.min, priceRange.max]}
+                      min={actualPriceRange.min}
+                      max={actualPriceRange.max}
+                      step={500}
+                      onChange={handlePriceChange}
+                    />
+                    <div className="flex justify-between text-sm mt-2">
+                      <div>₹{priceRange.min.toLocaleString()}</div>
+                      <div>₹{priceRange.max.toLocaleString()}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <div className="heading6">Primary Material</div>
+                  <div className="list-material mt-2">
+                    {[
+                      "Wood (Teak)",
+                      "Wood (Oak)",
+                      "Wood (Engineered)",
+                      "Metal",
+                      "Glass",
+                      "Plastic",
+                      "Rattan",
+                      "Fabric",
+                      "Marble",
+                      "Granite",
+                      "Ceramic",
+                      "Bamboo",
+                    ].map((m, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between mt-2"
+                      >
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedMaterials.includes(m)}
+                            onChange={() => handleMaterial(m)}
+                          />
+                          <span>{m}</span>
+                        </label>
+                        <div className="text-secondary2">
+                          (
+                          {
+                            data.filter((d) =>
+                              ((d as any).primaryMaterial || []).includes(m)
+                            ).length
+                          }
+                          )
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="heading6">Vendors</div>
+                  <div className="list-brand mt-2">
+                    {Array.from(
+                      new Set(
+                        data.map((item) => (item as any).vendor).filter(Boolean)
+                      )
+                    ).map((vid, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between mt-2"
+                      >
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedVendors.includes(vid)}
+                            onChange={() => handleBrand(vid)}
+                          />
+                          <span className="capitalize">
+                            {vendorMap[vid] || vid}
+                          </span>
+                        </label>
+                        <div className="text-secondary2">
+                          (
+                          {data.filter((d) => (d as any).vendor === vid).length}
+                          )
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
           <div className="flex max-md:flex-wrap max-md:flex-col-reverse gap-y-8">
-            <div className="sidebar lg:w-1/4 md:w-1/3 w-full md:pr-12">
+            <div className="hidden sidebar md:block lg:w-1/4 md:w-1/3 w-full md:pr-12">
               <div className="filter-type pb-8 border-b border-line">
                 <div className="heading6">Sub Categories</div>
                 <div className="list-type mt-4">
@@ -579,7 +819,7 @@ const ShopBreadCrumb1: React.FC<Props> = ({
                               type="checkbox"
                               name={brand.id}
                               id={brand.id}
-                              checked={selectedBrandFilter === brand.id}
+                              checked={selectedBrandFilters.includes(brand.id)}
                               onChange={() => handleBrandFilter(brand.id)}
                             />
                             <Icon.CheckSquare
@@ -654,7 +894,7 @@ const ShopBreadCrumb1: React.FC<Props> = ({
                             type="checkbox"
                             name={style}
                             id={style}
-                            checked={selectedStyle === style}
+                            checked={selectedStyles.includes(style)}
                             onChange={() => handleStyle(style)}
                           />
                           <Icon.CheckSquare
@@ -744,7 +984,7 @@ const ShopBreadCrumb1: React.FC<Props> = ({
                             type="checkbox"
                             name={material}
                             id={material}
-                            checked={selectedMaterial === material}
+                            checked={selectedMaterials.includes(material)}
                             onChange={() => handleMaterial(material)}
                           />
                           <Icon.CheckSquare
@@ -798,7 +1038,7 @@ const ShopBreadCrumb1: React.FC<Props> = ({
                               type="checkbox"
                               name={vendorId}
                               id={vendorId}
-                              checked={brand === vendorId}
+                              checked={selectedVendors.includes(vendorId)}
                               onChange={() => handleBrand(vendorId)}
                             />
                             <Icon.CheckSquare
@@ -869,9 +1109,10 @@ const ShopBreadCrumb1: React.FC<Props> = ({
                   </div>
                 </div>
                 {(selectedType ||
-                  selectedBrandName ||
-                  selectedStyleName ||
-                  selectedMaterialName ||
+                  (selectedBrandFilters && selectedBrandFilters.length > 0) ||
+                  (selectedStyles && selectedStyles.length > 0) ||
+                  (selectedMaterials && selectedMaterials.length > 0) ||
+                  (selectedVendors && selectedVendors.length > 0) ||
                   selectedBrand) && (
                   <>
                     <div className="list flex items-center gap-3">
@@ -891,39 +1132,74 @@ const ShopBreadCrumb1: React.FC<Props> = ({
                           </span>
                         </div>
                       )}
-                      {selectedBrandName && (
-                        <div
-                          className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"
-                          onClick={() => {
-                            setSelectedBrandFilter(null);
-                          }}
-                        >
-                          <Icon.X className="cursor-pointer" />
-                          <span>{selectedBrandName}</span>
-                        </div>
-                      )}
-                      {selectedStyleName && (
-                        <div
-                          className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"
-                          onClick={() => {
-                            setSelectedStyle(null);
-                          }}
-                        >
-                          <Icon.X className="cursor-pointer" />
-                          <span>{selectedStyleName}</span>
-                        </div>
-                      )}
-                      {selectedMaterialName && (
-                        <div
-                          className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"
-                          onClick={() => {
-                            setSelectedMaterial(null);
-                          }}
-                        >
-                          <Icon.X className="cursor-pointer" />
-                          <span>{selectedMaterialName}</span>
-                        </div>
-                      )}
+                      {selectedBrandFilters &&
+                        selectedBrandFilters.map((bid) => (
+                          <div
+                            key={bid}
+                            className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"
+                            onClick={() => {
+                              setSelectedBrandFilters((prev) =>
+                                prev.filter((b) => b !== bid)
+                              );
+                              if (selectedBrandFilter === bid)
+                                setSelectedBrandFilter(null);
+                            }}
+                          >
+                            <Icon.X className="cursor-pointer" />
+                            <span>
+                              {allBrands.find((b) => b.id === bid)?.name || bid}
+                            </span>
+                          </div>
+                        ))}
+                      {selectedStyles &&
+                        selectedStyles.map((s) => (
+                          <div
+                            key={s}
+                            className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"
+                            onClick={() => {
+                              setSelectedStyles((prev) =>
+                                prev.filter((x) => x !== s)
+                              );
+                              if (selectedStyle === s) setSelectedStyle(null);
+                            }}
+                          >
+                            <Icon.X className="cursor-pointer" />
+                            <span>{s}</span>
+                          </div>
+                        ))}
+                      {selectedMaterials &&
+                        selectedMaterials.map((m) => (
+                          <div
+                            key={m}
+                            className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"
+                            onClick={() => {
+                              setSelectedMaterials((prev) =>
+                                prev.filter((x) => x !== m)
+                              );
+                              if (selectedMaterial === m)
+                                setSelectedMaterial(null);
+                            }}
+                          >
+                            <Icon.X className="cursor-pointer" />
+                            <span>{m}</span>
+                          </div>
+                        ))}
+                      {selectedVendors &&
+                        selectedVendors.map((v) => (
+                          <div
+                            key={v}
+                            className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"
+                            onClick={() => {
+                              setSelectedVendors((prev) =>
+                                prev.filter((x) => x !== v)
+                              );
+                              if (brand === v) setBrand(null);
+                            }}
+                          >
+                            <Icon.X className="cursor-pointer" />
+                            <span>{vendorMap[v] || v}</span>
+                          </div>
+                        ))}
                       {selectedBrand && (
                         <div
                           className="item flex items-center px-2 py-1 gap-1 bg-linear rounded-full capitalize"

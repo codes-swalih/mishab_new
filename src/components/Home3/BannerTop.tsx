@@ -85,7 +85,7 @@ const BannerTop = ({ props, textColor, bgLine }: Props) => {
     }
 
     return (
-        <div className={`banner-top ${props} w-full flex items-center justify-center`}>
+        <div className={`${props} w-full flex items-center justify-center`}>
             {notifications.length > 0 && (
                 <div
                     key={notifications[currentIndex].id}

@@ -481,6 +481,9 @@ const Default: React.FC<Props> = ({ data, productId }) => {
   const [activeColor, setActiveColor] = useState<string>("");
   const [activeSize, setActiveSize] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string | undefined>("description");
+  const [descriptionOpen, setDescriptionOpen] = useState<boolean>(false);
+  const [reviewsOpen, setReviewsOpen] = useState<boolean>(false);
+  const [specsOpen, setSpecsOpen] = useState<boolean>(false);
   const { addToCart, updateCart, cartState, clearCart } = useCart();
   const { openModalCart } = useModalCartContext();
   const { addToWishlist, removeFromWishlist, wishlistState } = useWishlist();
@@ -939,6 +942,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                     )}
                   </div>
                   <div className="heading4 mt-1 ">{productMain.name}</div>
+                  {/* <div className=" mt-1 ">{productMain.vendor}</div> */}
                 </div>
                 <div
                   className={`add-wishlist-btn w-12 h-12 flex items-center justify-center border border-line cursor-pointer rounded-full duration-300 hover:bg-black hover:text-white ${
@@ -977,7 +981,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
               )}
               <div className="flex flex-col pb-6 border-b border-line">
                 <div className="flex items-center gap-3 flex-wrap mt-2">
-                  <div className="product-price heading5">₹{unitPrice}.00</div>
+                  <div className="product-price heading4">₹{unitPrice}.00</div>
                   <div className="w-px h-4 bg-line"></div>
                   <div className="product-origin-price font-normal text-secondary2">
                     <del>₹{productMain.originPrice}.00</del>
@@ -995,13 +999,13 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                   )}
                 </div>
                 {productMain.taxId && (
-                  <div className="mt-1">
-                    {taxLoading ? (
+                  <div className="mt-1 text-xs">
+                  {taxLoading ? (
                       <span className="caption1 text-secondary">
                         Loading GST info...
                       </span>
                     ) : taxData ? (
-                      <span className="caption1 text-secondary">
+                      <span className="caption1 text-secondary text-sm">
                         Price includes {taxData.rate}% GST
                       </span>
                     ) : (
@@ -1011,7 +1015,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                     )}
                   </div>
                 )}
-                <div className="desc text-secondary mt-3">
+                <div className="desc text-secondary text-sm md:text-base mt-3">
                   {productMain.shortDescription || productMain.description}
                 </div>
               </div>
@@ -1194,706 +1198,350 @@ const Default: React.FC<Props> = ({ data, productId }) => {
         </div>
         <div className="desc-tab md:pb-20 pb-10">
           <div className="container">
-            <div className="flex items-center justify-center w-full">
-              <div className="menu-tab flex items-center md:gap-[60px] gap-8">
-                <div
-                  className={`tab-item heading5 has-line-before text-secondary2 hover:text-black duration-300 ${
-                    activeTab === "description" ? "active" : ""
-                  }`}
-                  onClick={() => handleActiveTab("description")}
+            <div className="max-w-4xl mx-auto space-y-4">
+              {/* Description collapsible */}
+              <div className="bg-white rounded-lg shadow-sm">
+                <button
+                  className="w-full flex items-center justify-between p-4"
+                  onClick={() => setDescriptionOpen(!descriptionOpen)}
+                  aria-expanded={descriptionOpen}
                 >
-                  Description
-                </div>
-                <div
-                  className={`tab-item heading5 has-line-before text-secondary2 hover:text-black duration-300 ${
-                    activeTab === "specifications" ? "active" : ""
-                  }`}
-                  onClick={() => handleActiveTab("specifications")}
-                >
-                  Specifications
-                </div>
-              </div>
-            </div>
-            <div className="desc-block mt-8">
-              <div
-                className={`desc-item description ${
-                  activeTab === "description" ? "open" : ""
-                }`}
-              >
-                <div className="w-full max-w-4xl mx-auto">
-                  <div className="heading6 mb-6">Product Description</div>
-                  <div
-                    className="text-secondary leading-relaxed text-base px-4 py-6 bg-gray-50 rounded-lg"
-                    style={{
-                      whiteSpace: "pre-line",
-                      lineHeight: "1.8",
-                    }}
-                  >
+                  <div className="heading5">Description</div>
+                  <Icon.CaretDown
+                    size={20}
+                    className={`transition-transform duration-200 ${
+                      descriptionOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {descriptionOpen && (
+                  <div className="p-4 bg-gray-50 rounded-b-lg text-secondary leading-relaxed" style={{whiteSpace: "pre-line", lineHeight: 1.8}}>
                     {productMain.description}
                   </div>
-                </div>
-              </div>
-              <div
-                className={`desc-item specifications flex items-center justify-center ${
-                  activeTab === "specifications" ? "open" : ""
-                }`}
-              >
-                <div className="lg:w-1/2 sm:w-3/4 w-full">
-                  {/* Variable Options */}
-                  {data[0]?.variableOptions &&
-                    data[0].variableOptions.length > 0 && (
-                      <>
-                        {data[0].variableOptions.map((option, index) => (
-                          <div
-                            key={index}
-                            className={`item ${
-                              index % 2 === 0 ? "bg-surface" : ""
-                            } flex items-center gap-8 py-3 px-10`}
-                          >
-                            <div className="text-title sm:w-1/4 w-1/3">
-                              {option.name}
-                            </div>
-                            <p>
-                              {Array.isArray(option.values)
-                                ? option.values.join(", ")
-                                : "N/A"}
-                            </p>
-                          </div>
-                        ))}
-                      </>
-                    )}
-
-                  {/* Weight */}
-                  {data[0]?.weight && (
-                    <div className="item bg-surface flex items-center gap-8 py-3 px-10">
-                      <div className="text-title sm:w-1/4 w-1/3">Weight</div>
-                      <p>{data[0].weight} kg</p>
-                    </div>
-                  )}
-
-                  {/* Estimated Delivery */}
-                  {data[0]?.estimatedDeliveryText && (
-                    <div className="item flex items-center gap-8 py-3 px-10">
-                      <div className="text-title sm:w-1/4 w-1/3">Delivery</div>
-                      <p>{data[0].estimatedDeliveryText}</p>
-                    </div>
-                  )}
-
-                  {/* Dimensions */}
-                  {data[0]?.dimensions && (
-                    <div className="item bg-surface flex items-center gap-8 py-3 px-10">
-                      <div className="text-title sm:w-1/4 w-1/3">
-                        Dimensions
-                      </div>
-                      <p>{data[0].dimensions}</p>
-                    </div>
-                  )}
-
-                  {/* Room Type */}
-                  {data[0]?.roomType && (
-                    <div className="item flex items-center gap-8 py-3 px-10">
-                      <div className="text-title sm:w-1/4 w-1/3">Room Type</div>
-                      <p className="capitalize">{data[0].roomType}</p>
-                    </div>
-                  )}
-
-                  {/* Warranty */}
-                  {data[0]?.warrantyTime && (
-                    <div className="item bg-surface flex items-center gap-8 py-3 px-10">
-                      <div className="text-title sm:w-1/4 w-1/3">Warranty</div>
-                      <p>{data[0].warrantyTime}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="review-block md:py-20 py-10 bg-surface">
-          <div className="container">
-            <div className="heading flex items-center justify-between flex-wrap gap-4">
-              <div className="heading4">Customer Review</div>
-              <Link
-                href={"#form-review"}
-                className="button-main bg-white text-black border border-black"
-              >
-                Write Reviews
-              </Link>
-            </div>
-            {totalReviews > 0 && (
-              <div className="top-overview flex justify-between py-6 max-md:flex-col gap-y-6">
-                {reviewsLoading ? (
-                  <div className="w-full text-center py-8">
-                    <div className="text-secondary">
-                      Loading review statistics...
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="rating lg:w-1/4 md:w-[30%] lg:pr-[75px] md:pr-[35px]">
-                      <div className="heading flex items-center justify-center flex-wrap gap-3 gap-y-4">
-                        <div className="text-display">
-                          {averageRating || "0.0"}
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <Rate
-                            currentRate={Math.round(averageRating)}
-                            size={18}
-                          />
-                          <div className="text-secondary text-center mt-1">
-                            ({totalReviews} Ratings)
-                          </div>
-                        </div>
-                      </div>
-                      <div className="list-rating mt-3">
-                        <div className="item flex items-center justify-between gap-1.5">
-                          <div className="flex items-center gap-1">
-                            <div className="caption1">5</div>
-                            <Icon.Star size={14} weight="fill" />
-                          </div>
-                          <div className="progress bg-line relative w-3/4 h-2">
-                            <div
-                              className="progress-percent absolute bg-yellow h-full left-0 top-0"
-                              style={{
-                                width:
-                                  totalReviews > 0
-                                    ? `${
-                                        (ratingDistribution[5] / totalReviews) *
-                                        100
-                                      }%`
-                                    : "0%",
-                              }}
-                            ></div>
-                          </div>
-                          <div className="caption1">
-                            {totalReviews > 0
-                              ? Math.round(
-                                  (ratingDistribution[5] / totalReviews) * 100
-                                )
-                              : 0}
-                            %
-                          </div>
-                        </div>
-                        <div className="item flex items-center justify-between gap-1.5 mt-1">
-                          <div className="flex items-center gap-1">
-                            <div className="caption1">4</div>
-                            <Icon.Star size={14} weight="fill" />
-                          </div>
-                          <div className="progress bg-line relative w-3/4 h-2">
-                            <div
-                              className="progress-percent absolute bg-yellow h-full left-0 top-0"
-                              style={{
-                                width:
-                                  totalReviews > 0
-                                    ? `${
-                                        (ratingDistribution[4] / totalReviews) *
-                                        100
-                                      }%`
-                                    : "0%",
-                              }}
-                            ></div>
-                          </div>
-                          <div className="caption1">
-                            {totalReviews > 0
-                              ? Math.round(
-                                  (ratingDistribution[4] / totalReviews) * 100
-                                )
-                              : 0}
-                            %
-                          </div>
-                        </div>
-                        <div className="item flex items-center justify-between gap-1.5 mt-1">
-                          <div className="flex items-center gap-1">
-                            <div className="caption1">3</div>
-                            <Icon.Star size={14} weight="fill" />
-                          </div>
-                          <div className="progress bg-line relative w-3/4 h-2">
-                            <div
-                              className="progress-percent absolute bg-yellow h-full left-0 top-0"
-                              style={{
-                                width:
-                                  totalReviews > 0
-                                    ? `${
-                                        (ratingDistribution[3] / totalReviews) *
-                                        100
-                                      }%`
-                                    : "0%",
-                              }}
-                            ></div>
-                          </div>
-                          <div className="caption1">
-                            {totalReviews > 0
-                              ? Math.round(
-                                  (ratingDistribution[3] / totalReviews) * 100
-                                )
-                              : 0}
-                            %
-                          </div>
-                        </div>
-                        <div className="item flex items-center justify-between gap-1.5 mt-1">
-                          <div className="flex items-center gap-1">
-                            <div className="caption1">2</div>
-                            <Icon.Star size={14} weight="fill" />
-                          </div>
-                          <div className="progress bg-line relative w-3/4 h-2">
-                            <div
-                              className="progress-percent absolute bg-yellow h-full left-0 top-0"
-                              style={{
-                                width:
-                                  totalReviews > 0
-                                    ? `${
-                                        (ratingDistribution[2] / totalReviews) *
-                                        100
-                                      }%`
-                                    : "0%",
-                              }}
-                            ></div>
-                          </div>
-                          <div className="caption1">
-                            {totalReviews > 0
-                              ? Math.round(
-                                  (ratingDistribution[2] / totalReviews) * 100
-                                )
-                              : 0}
-                            %
-                          </div>
-                        </div>
-                        <div className="item flex items-center justify-between gap-1.5 mt-1">
-                          <div className="flex items-center gap-2">
-                            <div className="caption1">1</div>
-                            <Icon.Star size={14} weight="fill" />
-                          </div>
-                          <div className="progress bg-line relative w-3/4 h-2">
-                            <div
-                              className="progress-percent absolute bg-yellow h-full left-0 top-0"
-                              style={{
-                                width:
-                                  totalReviews > 0
-                                    ? `${
-                                        (ratingDistribution[1] / totalReviews) *
-                                        100
-                                      }%`
-                                    : "0%",
-                              }}
-                            ></div>
-                          </div>
-                          <div className="caption1">
-                            {totalReviews > 0
-                              ? Math.round(
-                                  (ratingDistribution[1] / totalReviews) * 100
-                                )
-                              : 0}
-                            %
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="list-img lg:w-3/4 md:w-[70%] lg:pl-[15px] md:pl-[15px]">
-                      <div className="heading5">
-                        All Image (
-                        {reviewsData.reduce(
-                          (total, review) =>
-                            total + (review.images?.length || 0),
-                          0
-                        )}
-                        )
-                      </div>
-                      <div className="list md:mt-6 mt-3">
-                        {reviewsData.length > 0 &&
-                        reviewsData.some(
-                          (review) => review.images && review.images.length > 0
-                        ) ? (
-                          <Swiper
-                            spaceBetween={16}
-                            slidesPerView={3}
-                            modules={[Navigation]}
-                            breakpoints={{
-                              576: {
-                                slidesPerView: 4,
-                                spaceBetween: 16,
-                              },
-                              640: {
-                                slidesPerView: 5,
-                                spaceBetween: 16,
-                              },
-                              768: {
-                                slidesPerView: 4,
-                                spaceBetween: 16,
-                              },
-                              992: {
-                                slidesPerView: 5,
-                                spaceBetween: 20,
-                              },
-                              1100: {
-                                slidesPerView: 5,
-                                spaceBetween: 20,
-                              },
-                              1290: {
-                                slidesPerView: 7,
-                                spaceBetween: 20,
-                              },
-                            }}
-                          >
-                            {reviewsData
-                              .filter(
-                                (review) =>
-                                  review.images && review.images.length > 0
-                              )
-                              .flatMap((review) => review.images!)
-                              .map((imageUrl, index) => (
-                                <SwiperSlide key={index}>
-                                  <Image
-                                    src={imageUrl}
-                                    width={400}
-                                    height={400}
-                                    alt="Review image"
-                                    className="w-[120px] aspect-square object-cover rounded-lg"
-                                  />
-                                </SwiperSlide>
-                              ))}
-                          </Swiper>
-                        ) : (
-                          <div className="text-center text-secondary py-8">
-                            No review images yet
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>
                 )}
               </div>
-            )}
-            <div className="list-review">
-              {reviewsLoading ? (
-                <div className="text-center py-8">
-                  <div className="text-secondary">Loading reviews...</div>
-                </div>
-              ) : reviewsError ? (
-                <div className="text-center py-8">
-                  <div className="text-red-500">{reviewsError}</div>
-                </div>
-              ) : reviewsData.length > 0 ? (
-                <>
-                  {(showAllReviews ? reviewsData : reviewsData.slice(0, 5)).map(
-                    (review, index) => (
-                      <div
-                        key={review.id}
-                        className="item flex max-lg:flex-col gap-y-4 w-full py-6 border-t border-line"
-                      >
-                        <div className="left lg:w-1/4 w-full lg:pr-[15px]">
-                          <div className="list-img-review flex gap-2">
-                            {review.images && review.images.length > 0 ? (
-                              review.images
-                                .slice(0, 3)
-                                .map((imageUrl, imgIndex) => (
-                                  <Image
-                                    key={imgIndex}
-                                    src={imageUrl}
-                                    width={200}
-                                    height={200}
-                                    alt="Review image"
-                                    className="w-[60px] aspect-square rounded-lg object-cover"
-                                  />
-                                ))
-                            ) : (
-                              <div className="w-[60px] h-[60px] bg-gray-200 rounded-lg flex items-center justify-center">
-                                <Icon.User
-                                  size={24}
-                                  className="text-gray-400"
-                                />
-                              </div>
-                            )}
-                          </div>
-                          <div className="user mt-3">
-                            <div className="text-title">{review.userName}</div>
-                            <div className="text-secondary2">
-                              {new Date(review.createdAt).toLocaleDateString(
-                                "en-US",
-                                {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                }
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="right lg:w-3/4 w-full lg:pl-[15px]">
-                          <div className="flex items-center gap-2">
-                            <Rate currentRate={review.rating} size={16} />
-                            <span className="text-sm text-secondary">
-                              {review.rating}.0
-                            </span>
-                          </div>
-                          <div className="heading5 mt-3">{review.title}</div>
-                          <div className="body1 mt-3">{review.message}</div>
-                        </div>
-                      </div>
-                    )
-                  )}
-                  {reviewsData.length > 5 && (
-                    <div
-                      className="text-button more-review-btn text-center mt-2 underline cursor-pointer hover:text-black transition-colors"
-                      onClick={() => setShowAllReviews(!showAllReviews)}
-                    >
-                      {showAllReviews
-                        ? "Show Less Comments"
-                        : `View More Comments (${reviewsData.length - 5} more)`}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-secondary">
-                    No reviews yet. Be the first to review this product!
-                  </div>
-                </div>
-              )}
-            </div>
-            <div id="form-review" className="form-review pt-6">
-              {/* Success and Error Messages */}
-              {reviewSuccessMessage && (
-                <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                  {reviewSuccessMessage}
-                </div>
-              )}
-              {reviewErrorMessage && (
-                <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-                  {reviewErrorMessage}
-                </div>
-              )}
-              <div className="heading4">Write a Review</div>
-              <form
-                className="grid sm:grid-cols-2 gap-4 gap-y-5 mt-6"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  const form = e.currentTarget;
-                  const formData = new FormData(form);
 
-                  // Get the files from the input
-                  const fileInput = form.querySelector(
-                    'input[type="file"]'
-                  ) as HTMLInputElement;
-                  const files = fileInput?.files;
-                  const imageUrls: string[] = [];
-
-                  try {
-                    // Get current user
-                    const userStr = localStorage.getItem("user");
-                    if (!userStr) {
-                      setReviewErrorMessage("Please login to submit a review");
-                      return;
-                    }
-
-                    let user;
-                    try {
-                      user = JSON.parse(userStr);
-                    } catch (parseError) {
-                      console.error("Error parsing user data:", parseError);
-                      setReviewErrorMessage(
-                        "Invalid user data. Please login again."
-                      );
-                      return;
-                    }
-
-                    // Validate user object
-                    if (!user || !user.uid || !user.name || !user.email) {
-                      setReviewErrorMessage(
-                        "Invalid user data. Please login again."
-                      );
-                      return;
-                    }
-
-                    // Upload images if any
-                    if (files && files.length > 0) {
-                      for (let i = 0; i < files.length; i++) {
-                        const file = files[i];
-                        const fileRef = storageRef(
-                          storage,
-                          `reviews/${productMain.id}/${Date.now()}_${file.name}`
-                        );
-                        await uploadBytes(fileRef, file);
-                        const url = await getDownloadURL(fileRef);
-                        imageUrls.push(url);
-                      }
-                    }
-
-                    // Validate rating
-                    if (reviewRating === 0) {
-                      setReviewErrorMessage(
-                        "Please select a rating before submitting your review"
-                      );
-                      return;
-                    }
-
-                    // Validate required fields
-                    const title = formData.get("title")?.toString().trim();
-                    const message = formData.get("message")?.toString().trim();
-
-                    if (!title || title.length < 3) {
-                      setReviewErrorMessage(
-                        "Please enter a review title with at least 3 characters"
-                      );
-                      return;
-                    }
-
-                    if (!message || message.length < 10) {
-                      setReviewErrorMessage(
-                        "Please enter a review message with at least 10 characters"
-                      );
-                      return;
-                    }
-
-                    // Create review object
-                    const review = {
-                      title: title,
-                      message: message,
-                      rating: reviewRating,
-                      images: imageUrls,
-                      userId: user.uid,
-                      userName: user.name,
-                      userEmail: user.email,
-                      createdAt: new Date().toISOString(),
-                      productId: productMain.id,
-                    };
-
-                    // Save to Firebase
-                    console.log("🔥 Submitting review:", {
-                      productId: productMain.id,
-                      userId: user.uid,
-                      userName: user.name,
-                      title: title,
-                      rating: reviewRating,
-                      messageLength: message.length,
-                      imageCount: imageUrls.length,
-                    });
-
-                    const reviewsRef = ref(
-                      database,
-                      `/products/${productMain.id}/reviews/${Date.now()}`
-                    );
-                    await set(reviewsRef, review);
-
-                    console.log("✅ Review submitted successfully");
-
-                    setReviewSuccessMessage("Review submitted successfully!");
-                    setReviewErrorMessage(null);
-                    form.reset();
-                    setReviewRating(0);
-
-                    // Refresh reviews data
-                    fetchReviewsData(productMain.id);
-
-                    // Clear success message after 5 seconds
-                    setTimeout(() => {
-                      setReviewSuccessMessage(null);
-                    }, 5000);
-                  } catch (error) {
-                    console.error("Error submitting review:", error);
-
-                    // Provide more specific error messages
-                    let errorMessage =
-                      "Failed to submit review. Please try again.";
-
-                    if (error instanceof Error) {
-                      if (error.message.includes("permission")) {
-                        errorMessage =
-                          "You do not have permission to submit a review. Please check your login status.";
-                      } else if (error.message.includes("network")) {
-                        errorMessage =
-                          "Network error. Please check your internet connection and try again.";
-                      } else if (error.message.includes("storage")) {
-                        errorMessage =
-                          "Error uploading images. Please try again with smaller images.";
-                      } else if (error.message.includes("database")) {
-                        errorMessage =
-                          "Database error. Please try again in a moment.";
-                      }
-                    }
-
-                    setReviewErrorMessage(errorMessage);
-                    setReviewSuccessMessage(null);
-                  }
-                }}
-              >
-                <div className="title col-span-full">
-                  <input
-                    className="border border-gray-400 px-4 pt-3 pb-3 w-full rounded-lg"
-                    id="title"
-                    name="title"
-                    type="text"
-                    placeholder="Review Title *"
-                    required
-                    onChange={() => setReviewErrorMessage(null)}
+              {/* Reviews collapsible */}
+              {/* Specifications collapsible */}
+              <div className="bg-white rounded-lg shadow-sm">
+                <button
+                  className="w-full flex items-center justify-between p-4"
+                  onClick={() => setSpecsOpen(!specsOpen)}
+                  aria-expanded={specsOpen}
+                >
+                  <div className="heading5">Specifications</div>
+                  <Icon.CaretDown
+                    size={20}
+                    className={`transition-transform duration-200 ${
+                      specsOpen ? "rotate-180" : ""
+                    }`}
                   />
-                </div>
-                <div className="col-span-full">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rating *
-                  </label>
+                </button>
+                {specsOpen && (
+                  <div className="p-4 bg-gray-50 rounded-b-lg text-secondary">
+                    <div className="lg:w-1/2 sm:w-3/4 w-full space-y-3">
+                      {data[0]?.variableOptions && data[0].variableOptions.length > 0 && (
+                        <>
+                          {data[0].variableOptions.map((option, index) => (
+                            <div key={index} className={`item ${index % 2 === 0 ? "bg-surface" : ""} flex items-center gap-8 py-3 px-4 rounded` }>
+                              <div className="text-title sm:w-1/4 w-1/3">{option.name}</div>
+                              <p>{Array.isArray(option.values) ? option.values.join(", ") : "N/A"}</p>
+                            </div>
+                          ))}
+                        </>
+                      )}
+
+                      {data[0]?.weight && (
+                        <div className="item bg-surface flex items-center gap-8 py-3 px-4 rounded">
+                          <div className="text-title sm:w-1/4 w-1/3">Weight</div>
+                          <p>{data[0].weight} kg</p>
+                        </div>
+                      )}
+
+                      {data[0]?.estimatedDeliveryText && (
+                        <div className="item flex items-center gap-8 py-3 px-4 rounded">
+                          <div className="text-title sm:w-1/4 w-1/3">Delivery</div>
+                          <p>{data[0].estimatedDeliveryText}</p>
+                        </div>
+                      )}
+
+                      {data[0]?.dimensions && (
+                        <div className="item bg-surface flex items-center gap-8 py-3 px-4 rounded">
+                          <div className="text-title sm:w-1/4 w-1/3">Dimensions</div>
+                          <p>{data[0].dimensions}</p>
+                        </div>
+                      )}
+
+                      {data[0]?.roomType && (
+                        <div className="item flex items-center gap-8 py-3 px-4 rounded">
+                          <div className="text-title sm:w-1/4 w-1/3">Room Type</div>
+                          <p className="capitalize">{data[0].roomType}</p>
+                        </div>
+                      )}
+
+                      {data[0]?.warrantyTime && (
+                        <div className="item bg-surface flex items-center gap-8 py-3 px-4 rounded">
+                          <div className="text-title sm:w-1/4 w-1/3">Warranty</div>
+                          <p>{data[0].warrantyTime}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm">
+                <button
+                  className="w-full flex items-center justify-between p-4"
+                  onClick={() => setReviewsOpen(!reviewsOpen)}
+                  aria-expanded={reviewsOpen}
+                >
                   <div className="flex items-center gap-3">
-                    <InteractiveRate
-                      rating={reviewRating}
-                      onRatingChange={(rating) => {
-                        setReviewRating(rating);
-                        setReviewErrorMessage(null);
-                      }}
-                      size={24}
-                    />
-                    <span className="text-sm text-gray-500">
-                      {reviewRating > 0
-                        ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}`
-                        : "Click to rate"}
-                    </span>
+                    <div className="heading5">Customer Reviews</div>
+                    <div className="caption1 text-secondary">({totalReviews})</div>
                   </div>
-                </div>
-                <div className="col-span-full message">
-                  <textarea
-                    className="border border-gray-400 px-4 py-3 w-full rounded-lg"
-                    id="message"
-                    name="message"
-                    placeholder="Your Review *"
-                    required
-                    onChange={() => setReviewErrorMessage(null)}
-                  ></textarea>
-                </div>
-                <div className="col-span-full">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Upload Images (Optional)
-                  </label>
-                  <div className=" border border-gray-400 p-2 rounded-lg w-40  text-white">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      className="block border border-gray-400 w-full text-sm text-gray-500
-                                        file:mr-4 file:py-2 file:px-4
-                                        file:rounded-full file:border-0
-                                        file:text-sm file:font-semibold
-                                        file:bg-blue-600 file:text-white
-                                        hover:file:bg-blue-700
-                                        file:cursor-pointer
-                                        file:transition-colors
-                                        file:duration-200"
-                    />
+                  <Icon.CaretDown
+                    size={20}
+                    className={`transition-transform duration-200 ${
+                      reviewsOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {reviewsOpen && (
+                  <div className="p-4 bg-surface rounded-b-lg">
+                    <div className="heading flex items-center justify-between flex-wrap gap-4">
+                      <div className="heading4">Customer Review</div>
+                      <Link href={"#form-review"} className="button-main bg-white text-black border border-black">
+                        Write Reviews
+                      </Link>
+                    </div>
+
+                    {/* reuse existing review layout inside collapsible */}
+                    {totalReviews > 0 && (
+                      <div className="top-overview flex justify-between py-6 max-md:flex-col gap-y-6">
+                        {reviewsLoading ? (
+                          <div className="w-full text-center py-8">
+                            <div className="text-secondary">Loading review statistics...</div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="rating lg:w-1/4 md:w-[30%] lg:pr-[75px] md:pr-[35px]">
+                              <div className="heading flex items-center justify-center flex-wrap gap-3 gap-y-4">
+                                <div className="text-display">{averageRating || "0.0"}</div>
+                                <div className="flex flex-col items-center">
+                                  <Rate currentRate={Math.round(averageRating)} size={18} />
+                                </div>
+                              </div>
+                              <div className="list-rating mt-3">
+                                <div className="item flex items-center justify-between gap-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <div className="caption1">5</div>
+                                    <Icon.Star size={14} weight="fill" />
+                                  </div>
+                                  <div className="progress bg-line relative w-3/4 h-2">
+                                    <div className="progress-percent absolute bg-yellow h-full left-0 top-0" style={{width: totalReviews > 0 ? `${(ratingDistribution[5] / totalReviews) * 100}%` : "0%"}} />
+                                  </div>
+                                  <div className="caption1">{totalReviews > 0 ? Math.round((ratingDistribution[5] / totalReviews) * 100) : 0}%</div>
+                                </div>
+                                <div className="item flex items-center justify-between gap-1.5 mt-1">
+                                  <div className="flex items-center gap-1">
+                                    <div className="caption1">4</div>
+                                    <Icon.Star size={14} weight="fill" />
+                                  </div>
+                                  <div className="progress bg-line relative w-3/4 h-2">
+                                    <div className="progress-percent absolute bg-yellow h-full left-0 top-0" style={{width: totalReviews > 0 ? `${(ratingDistribution[4] / totalReviews) * 100}%` : "0%"}} />
+                                  </div>
+                                  <div className="caption1">{totalReviews > 0 ? Math.round((ratingDistribution[4] / totalReviews) * 100) : 0}%</div>
+                                </div>
+                                <div className="item flex items-center justify-between gap-1.5 mt-1">
+                                  <div className="flex items-center gap-1">
+                                    <div className="caption1">3</div>
+                                    <Icon.Star size={14} weight="fill" />
+                                  </div>
+                                  <div className="progress bg-line relative w-3/4 h-2">
+                                    <div className="progress-percent absolute bg-yellow h-full left-0 top-0" style={{width: totalReviews > 0 ? `${(ratingDistribution[3] / totalReviews) * 100}%` : "0%"}} />
+                                  </div>
+                                  <div className="caption1">{totalReviews > 0 ? Math.round((ratingDistribution[3] / totalReviews) * 100) : 0}%</div>
+                                </div>
+                                <div className="item flex items-center justify-between gap-1.5 mt-1">
+                                  <div className="flex items-center gap-1">
+                                    <div className="caption1">2</div>
+                                    <Icon.Star size={14} weight="fill" />
+                                  </div>
+                                  <div className="progress bg-line relative w-3/4 h-2">
+                                    <div className="progress-percent absolute bg-yellow h-full left-0 top-0" style={{width: totalReviews > 0 ? `${(ratingDistribution[2] / totalReviews) * 100}%` : "0%"}} />
+                                  </div>
+                                  <div className="caption1">{totalReviews > 0 ? Math.round((ratingDistribution[2] / totalReviews) * 100) : 0}%</div>
+                                </div>
+                                <div className="item flex items-center justify-between gap-1.5 mt-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="caption1">1</div>
+                                    <Icon.Star size={14} weight="fill" />
+                                  </div>
+                                  <div className="progress bg-line relative w-3/4 h-2">
+                                    <div className="progress-percent absolute bg-yellow h-full left-0 top-0" style={{width: totalReviews > 0 ? `${(ratingDistribution[1] / totalReviews) * 100}%` : "0%"}} />
+                                  </div>
+                                  <div className="caption1">{totalReviews > 0 ? Math.round((ratingDistribution[1] / totalReviews) * 100) : 0}%</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="list-img lg:w-3/4 md:w-[70%] lg:pl-[15px] md:pl-[15px]">
+                              <div className="heading5">All Image ({reviewsData.reduce((total, review) => total + (review.images?.length || 0), 0)})</div>
+                              <div className="list md:mt-6 mt-3">
+                                {reviewsData.length > 0 && reviewsData.some((review) => review.images && review.images.length > 0) ? (
+                                  <Swiper spaceBetween={16} slidesPerView={3} modules={[Navigation]} breakpoints={{576:{slidesPerView:4,spaceBetween:16},640:{slidesPerView:5,spaceBetween:16},768:{slidesPerView:4,spaceBetween:16},992:{slidesPerView:5,spaceBetween:20},1100:{slidesPerView:5,spaceBetween:20},1290:{slidesPerView:7,spaceBetween:20}}}>
+                                    {reviewsData.filter((review) => review.images && review.images.length > 0).flatMap((review) => review.images!).map((imageUrl, index) => (
+                                      <SwiperSlide key={index}>
+                                        <Image src={imageUrl} width={400} height={400} alt="Review image" className="w-[120px] aspect-square object-cover rounded-lg" />
+                                      </SwiperSlide>
+                                    ))}
+                                  </Swiper>
+                                ) : (
+                                  <div className="text-center text-secondary py-8">No review images yet</div>
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="list-review mt-4">
+                      {reviewsLoading ? (
+                        <div className="text-center py-8">
+                          <div className="text-secondary">Loading reviews...</div>
+                        </div>
+                      ) : reviewsError ? (
+                        <div className="text-center py-8">
+                          <div className="text-red-500">{reviewsError}</div>
+                        </div>
+                      ) : reviewsData.length > 0 ? (
+                        <>
+                          {(showAllReviews ? reviewsData : reviewsData.slice(0, 5)).map((review) => (
+                            <div key={review.id} className="item flex max-lg:flex-col gap-y-4 w-full py-6 border-t border-line">
+                              <div className="left lg:w-1/4 w-full lg:pr-[15px]">
+                                <div className="list-img-review flex gap-2">
+                                  {review.images && review.images.length > 0 ? (
+                                    review.images.slice(0, 3).map((imageUrl, imgIndex) => (
+                                      <Image key={imgIndex} src={imageUrl} width={200} height={200} alt="Review image" className="w-[60px] aspect-square rounded-lg object-cover" />
+                                    ))
+                                  ) : (
+                                    <div className="w-[60px] h-[60px] bg-gray-200 rounded-lg flex items-center justify-center">
+                                      <Icon.User size={24} className="text-gray-400" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="user mt-3">
+                                  <div className="text-title">{review.userName}</div>
+                                  <div className="text-secondary2">{new Date(review.createdAt).toLocaleDateString("en-US",{year: "numeric", month: "long", day: "numeric"})}</div>
+                                </div>
+                              </div>
+                              <div className="right lg:w-3/4 w-full lg:pl-[15px]">
+                                <div className="flex items-center gap-2">
+                                  <Rate currentRate={review.rating} size={16} />
+                                  <span className="text-sm text-secondary">{review.rating}.0</span>
+                                </div>
+                                <div className="heading5 mt-3">{review.title}</div>
+                                <div className="body1 mt-3">{review.message}</div>
+                              </div>
+                            </div>
+                          ))}
+                          {reviewsData.length > 5 && (
+                            <div className="text-button more-review-btn text-center mt-2 underline cursor-pointer hover:text-black transition-colors" onClick={() => setShowAllReviews(!showAllReviews)}>
+                              {showAllReviews ? "Show Less Comments" : `View More Comments (${reviewsData.length - 5} more)`}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-center py-8">
+                          <div className="text-secondary">No reviews yet. Be the first to review this product!</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* review form stays here */}
+                    <div id="form-review" className="form-review pt-6">
+                      {reviewSuccessMessage && (<div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">{reviewSuccessMessage}</div>)}
+                      {reviewErrorMessage && (<div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">{reviewErrorMessage}</div>)}
+                      <div className="heading4">Write a Review</div>
+                      <form className="grid sm:grid-cols-2 gap-4 gap-y-5 mt-6" onSubmit={async (e) => {
+                        e.preventDefault();
+                        const form = e.currentTarget;
+                        const formData = new FormData(form);
+                        const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+                        const files = fileInput?.files;
+                        const imageUrls: string[] = [];
+                        try {
+                          const userStr = localStorage.getItem("user");
+                          if (!userStr) { setReviewErrorMessage("Please login to submit a review"); return; }
+                          let user;
+                          try { user = JSON.parse(userStr); } catch (parseError) { console.error(parseError); setReviewErrorMessage("Invalid user data. Please login again."); return; }
+                          if (!user || !user.uid || !user.name || !user.email) { setReviewErrorMessage("Invalid user data. Please login again."); return; }
+                          if (files && files.length > 0) {
+                            for (let i = 0; i < files.length; i++) {
+                              const file = files[i];
+                              const fileRef = storageRef(storage, `reviews/${productMain.id}/${Date.now()}_${file.name}`);
+                              await uploadBytes(fileRef, file);
+                              const url = await getDownloadURL(fileRef);
+                              imageUrls.push(url);
+                            }
+                          }
+                          if (reviewRating === 0) { setReviewErrorMessage("Please select a rating before submitting your review"); return; }
+                          const title = formData.get("title")?.toString().trim();
+                          const message = formData.get("message")?.toString().trim();
+                          if (!title || title.length < 3) { setReviewErrorMessage("Please enter a review title with at least 3 characters"); return; }
+                          if (!message || message.length < 10) { setReviewErrorMessage("Please enter a review message with at least 10 characters"); return; }
+                          const review = { title, message, rating: reviewRating, images: imageUrls, userId: user.uid, userName: user.name, userEmail: user.email, createdAt: new Date().toISOString(), productId: productMain.id };
+                          const reviewsRef = ref(database, `/products/${productMain.id}/reviews/${Date.now()}`);
+                          await set(reviewsRef, review);
+                          setReviewSuccessMessage("Review submitted successfully!"); setReviewErrorMessage(null); form.reset(); setReviewRating(0); fetchReviewsData(productMain.id);
+                          setTimeout(() => setReviewSuccessMessage(null), 5000);
+                        } catch (error) {
+                          console.error("Error submitting review:", error);
+                          let errorMessage = "Failed to submit review. Please try again.";
+                          if (error instanceof Error) {
+                            if (error.message.includes("permission")) errorMessage = "You do not have permission to submit a review. Please check your login status.";
+                            else if (error.message.includes("network")) errorMessage = "Network error. Please check your internet connection and try again.";
+                            else if (error.message.includes("storage")) errorMessage = "Error uploading images. Please try again with smaller images.";
+                            else if (error.message.includes("database")) errorMessage = "Database error. Please try again in a moment.";
+                          }
+                          setReviewErrorMessage(errorMessage); setReviewSuccessMessage(null);
+                        }
+                      }}>
+                        <div className="title col-span-full">
+                          <input className="border border-gray-400 px-4 pt-3 pb-3 w-full rounded-lg" id="title" name="title" type="text" placeholder="Review Title *" required onChange={() => setReviewErrorMessage(null)} />
+                        </div>
+                        <div className="col-span-full">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Rating *</label>
+                          <div className="flex items-center gap-3">
+                            <InteractiveRate rating={reviewRating} onRatingChange={(rating) => { setReviewRating(rating); setReviewErrorMessage(null); }} size={24} />
+                            <span className="text-sm text-gray-500">{reviewRating > 0 ? `${reviewRating} star${reviewRating > 1 ? "s" : ""}` : "Click to rate"}</span>
+                          </div>
+                        </div>
+                        <div className="col-span-full message">
+                          <textarea className="border border-gray-400 px-4 py-3 w-full rounded-lg" id="message" name="message" placeholder="Your Review *" required onChange={() => setReviewErrorMessage(null)}></textarea>
+                        </div>
+                        <div className="col-span-full">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Upload Images (Optional)</label>
+                          <div className=" border border-gray-400 p-2 rounded-lg w-40  text-white">
+                            <input type="file" multiple accept="image/*" className="block border border-gray-400 w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer file:transition-colors file:duration-200" />
+                          </div>
+                        </div>
+                        <div className="col-span-full sm:pt-3">
+                          <button type="submit" className="button-main bg-white text-black border border-black">Submit Review</button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
-                </div>
-                <div className="col-span-full sm:pt-3">
-                  <button
-                    type="submit"
-                    className="button-main bg-white text-black border border-black"
-                  >
-                    Submit Review
-                  </button>
-                </div>
-              </form>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="related-product md:py-20 py-10">
+        <div className="related-product md:py-20 ">
           <div className="container">
-            <div className="heading3 text-center">Related Products</div>
+            <div className="heading3">Related Products</div>
             {relatedProductsLoading ? (
               <div className="text-center py-8">
                 <div className="text-secondary">
@@ -1922,6 +1570,36 @@ const Default: React.FC<Props> = ({ data, productId }) => {
         </div>
         <div className=" p-5">
           <TrustBadges />
+        </div>
+        {/* Mobile sticky add-to-cart bar */}
+        <div className="fixed bottom-0 left-0 right-0 md:hidden z-50">
+          <div className="max-w-4xl mx-auto flex items-center justify-between bg-white border-t border-gray-200 p-3 shadow-lg">
+            <div className="flex items-center gap-3">
+              <div className="text-lg font-semibold">₹{unitPrice}.00</div>
+              {productMain.originPrice && (
+                <div className="text-sm text-secondary2 line-through">₹{productMain.originPrice}.00</div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleAddToWishlist}
+                className="w-10 h-10 flex items-center justify-center border border-line rounded-lg"
+                aria-label="Wishlist"
+              >
+                {wishlistState.wishlistArray.some((item) => item.id === productMain.id) ? (
+                  <Icon.Heart size={20} weight="fill" className="text-red-500" />
+                ) : (
+                  <Icon.Heart size={20} />
+                )}
+              </button>
+              <button
+                onClick={productMain.quantity > 0 ? handleAddToCart : undefined}
+                className={`px-4 py-2 rounded-lg text-white font-semibold ${productMain.quantity > 0 ? 'bg-black' : 'bg-gray-300 text-gray-600'}`}
+              >
+                {productMain.quantity > 0 ? 'Add To Cart' : 'Out of Stock'}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </>
