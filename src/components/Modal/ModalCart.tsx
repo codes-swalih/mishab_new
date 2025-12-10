@@ -211,7 +211,7 @@ const ModalCart = () => {
                 ? "modal-enter-mobile md:modal-enter-desktop"
                 : "modal-exit-mobile md:modal-exit-desktop"
             }
-            bottom-0 left-0 right-0 rounded-t-3xl max-h-[90vh] h-[90vh]
+            bottom-0 left-0 right-0 rounded-t-3xl max-h-[80vh] h-[80vh]
             md:top-0 md:right-0 md:left-auto md:bottom-auto md:rounded-none md:max-h-full md:h-full md:w-full md:max-w-md
           `}
           onClick={(e) => {
