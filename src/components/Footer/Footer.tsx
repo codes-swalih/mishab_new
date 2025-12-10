@@ -13,7 +13,7 @@ const Footer = () => {
             <Link href={"/"} className="inline-block mb-6">
               <h2 className="text-3xl md:text-4xl font-bold">Oak & Aura</h2>
             </Link>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-400">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 text-sm text-gray-400">
               <div className="flex items-start gap-2">
                 <Icon.Envelope size={18} className="mt-0.5 flex-shrink-0" />
                 <span>smeraasinnovate@gmail.com</span>

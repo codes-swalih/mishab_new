@@ -759,7 +759,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
   return (
     <>
       <div className="product-detail default">
-        <div className="featured-product underwear md:py-20 py-5">
+        <div className="featured-product underwear md:py-20 ">
           <div className="md:ml-10 flex justify-between gap-t- flex-wrap">
             <div className=" list-img md:w-1/2 md:pr-[45px] w-full">
               {/* MAIN SWIPER: loop + autoplay moving left + pagination dots centered */}
@@ -945,7 +945,7 @@ const Default: React.FC<Props> = ({ data, productId }) => {
                   {/* <div className=" mt-1 ">{productMain.vendor}</div> */}
                 </div>
                 <div
-                  className={`add-wishlist-btn w-12 h-12 flex items-center justify-center border border-line cursor-pointer rounded-full duration-300 hover:bg-black hover:text-white ${
+                  className={`add-wishlist-btn w-12 h-12 flex items-center justify-center border border-line cursor-pointer rounded-full duration-300 ${
                     wishlistState.wishlistArray.some(
                       (item) => item.id === productMain.id
                     )

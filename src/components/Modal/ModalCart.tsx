@@ -26,8 +26,29 @@ const ModalCart = () => {
   const { isModalOpen, closeModalCart } = useModalCartContext();
   const { cartState, addToCart, removeFromCart, updateCart } = useCart();
 
+  // Freeze background scroll when modal is open
+  useEffect(() => {
+    if (isModalOpen) {
+      // Prevent scrolling on body
+      document.body.style.overflow = "hidden";
+      document.body.style.height = "100vh";
+      document.documentElement.style.overflow = "hidden";
+    } else {
+      // Restore scrolling
+      document.body.style.overflow = "";
+      document.body.style.height = "";
+      document.documentElement.style.overflow = "";
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "";
+      document.body.style.height = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, [isModalOpen]);
+
   const handleAddToCart = (productItem: ProductType) => {
-    // Validate that the product has required properties before adding to cart
     if (!productItem || !productItem.id) {
       console.warn("Attempted to add invalid product to cart:", productItem);
       return;
@@ -75,299 +96,333 @@ const ModalCart = () => {
     );
   };
 
+  if (!isModalOpen) return null;
+
   return (
     <>
-      <div className={`modal-cart-block`} onClick={closeModalCart}>
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-[9999]"
+        onClick={closeModalCart}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflow: "hidden",
+        }}
+      >
         <div
-          className={`modal-cart-main flex ${isModalOpen ? "open" : ""}`}
+          className="fixed top-0 right-0 h-[80vh] w-full max-w-md bg-white md:h-[100vh] shadow-2xl flex flex-col"
           onClick={(e) => {
             e.stopPropagation();
           }}
+          style={{
+            maxHeight: "100vh",
+            height: "100vh",
+            overflow: "hidden",
+          }}
         >
-          <div className="right cart-block md:w-full w-full py-6 relative overflow-hidden">
-            <div className="heading px-6 pb-3 flex items-center justify- relative">
-              <div className="heading5">Shopping Cart</div>
-              <div
-                className="close-btn absolute right-6 top-0 w-6 h-6 rounded-full bg-surface flex items-center justify-center duration-300 cursor-pointer hover:bg-black hover:text-white"
-                onClick={closeModalCart}
-              >
-                <Icon.X size={14} />
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0 bg-white">
+            <h2 className="text-xl font-semibold">Shopping Cart</h2>
+            <button
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-black hover:text-white transition-all duration-300"
+              onClick={closeModalCart}
+            >
+              <Icon.X size={16} weight="bold" />
+            </button>
+          </div>
+
+          {/* Scrollable Product List */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {cartState.cartArray.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <Icon.ShoppingCartSimple
+                  size={64}
+                  className="text-gray-300 mb-4"
+                />
+                <p className="text-gray-500 text-lg">Your cart is empty</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Add items to get started
+                </p>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {cartState.cartArray.map((product) => {
+                  if (!product || typeof product !== "object") {
+                    console.error("Invalid product in cart:", product);
+                    return null;
+                  }
 
-            <div className="list-product px-6">
-              {cartState.cartArray.map((product) => {
-                // Debug logging to help identify problematic products
-                if (!product || typeof product !== "object") {
-                  console.error("Invalid product in cart:", product);
-                  return null;
-                }
+                  const safeImage =
+                    product?.images &&
+                    Array.isArray(product.images) &&
+                    product.images.length > 0
+                      ? product.images[0]
+                      : "/images/other/404-img.png";
+                  const qty = product?.quantity || 1;
+                  const unit = (product?.salePrice ?? product?.price ?? 0) || 0;
+                  const itemSubtotal = unit * qty;
 
-                // Add defensive checks for product properties
-                // Size and color hidden per request
-                const safeImage =
-                  product?.images &&
-                  Array.isArray(product.images) &&
-                  product.images.length > 0
-                    ? product.images[0]
-                    : "/images/other/404-img.png";
-                const qty = product?.quantity || 1;
-                const unit = (product?.salePrice ?? product?.price ?? 0) || 0;
-                const itemSubtotal = unit * qty;
-
-                return (
-                  <div
-                    key={product.id}
-                    className="item py-5 flex items-center justify-between gap-3 border-b border-line"
-                  >
-                    <div className="infor flex items-center gap-3 w-full">
-                      <div className="bg-img w-[100px] aspect-square flex-shrink-0 rounded-lg overflow-hidden">
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex gap-4 pb-4 border-b border-gray-200 last:border-b-0"
+                    >
+                      <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                         <Image
                           src={safeImage}
-                          width={300}
-                          height={300}
+                          width={96}
+                          height={96}
                           alt={product.name || "Product"}
-                          className="w-full h-full"
+                          className="w-full h-full object-cover"
                         />
                       </div>
-                      <div className="w-full">
-                        <div className="flex items-center justify-between w-full">
-                          <div className="name w-5/6 line-clamp-1 md:line-clamp-2 text-button">
-                            {product.name || "Unnamed Product"}
-                          </div>
-                          <div
-                            className="remove-cart-btn  caption1 font-semibold text-red  cursor-pointer"
-                            onClick={() => removeFromCart(product.id)}
-                          >
-                            <Icon.X />
+                      <div className="flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <h3 className="font-medium text-sm line-clamp-2 flex-1">
+                              {product.name || "Unnamed Product"}
+                            </h3>
+                            <button
+                              className="text-red-500 hover:text-red-700 flex-shrink-0"
+                              onClick={() => removeFromCart(product.id)}
+                            >
+                              <Icon.X size={20} weight="bold" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between gap-4 mt-3 w-full">
-                          <div className="flex items-center gap-3">
-                            <div className="quantity-block px-2 py-1 flex  items-center justify-between rounded-lg border border-line w-[120px]">
-                              <span
-                                className="cursor-pointer"
-                                onClick={() => handleDecreaseQty(product.id)}
-                              >
-                                -
-                              </span>
-                              <div className="text-sm font-semibold">{qty}</div>
-                              <span
-                                className="cursor-pointer"
-                                onClick={() => handleIncreaseQty(product.id)}
-                              >
-                                +
-                              </span>
-                            </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-1.5">
+                            <button
+                              className="text-gray-600 hover:text-black font-medium w-6 h-6 flex items-center justify-center"
+                              onClick={() => handleDecreaseQty(product.id)}
+                            >
+                              -
+                            </button>
+                            <span className="font-semibold text-sm min-w-[20px] text-center">
+                              {qty}
+                            </span>
+                            <button
+                              className="text-gray-600 hover:text-black font-medium w-6 h-6 flex items-center justify-center"
+                              onClick={() => handleIncreaseQty(product.id)}
+                            >
+                              +
+                            </button>
                           </div>
-                          <div className="text-right">
-                            <div className="product-price text-title">
-                              ₹{itemSubtotal}.00
-                            </div>
+                          <div className="font-semibold text-base">
+                            ₹{itemSubtotal.toLocaleString()}.00
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Footer - Fixed at Bottom */}
+          <div className="flex-shrink-0 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-lg font-semibold">Subtotal</span>
+                <span className="text-xl font-bold">
+                  ₹{totalCart.toLocaleString()}.00
+                </span>
+              </div>
+              <Link
+                href="/cart"
+                className="block w-full bg-black text-white text-center font-semibold py-3.5 rounded-lg hover:bg-gray-800 transition-colors uppercase text-sm tracking-wide"
+                onClick={closeModalCart}
+              >
+                View Cart
+              </Link>
+              <button
+                onClick={closeModalCart}
+                className="w-full text-center text-sm text-gray-600 hover:text-black mt-3 font-medium uppercase tracking-wide"
+              >
+                Or Continue Shopping
+              </button>
             </div>
-            <div className="footer-modal bg-white absolute bottom-0 left-0 w-full">
-              <div className="flex items-center justify-between pt-6 px-6">
-                <div className="heading5">Subtotal</div>
-                <div className="heading5">₹{totalCart}.00</div>
-              </div>
-              <div className="block-button text-center p-6">
-                <div className="w-full">
-                  <Link
-                    href={"/cart"}
-                    className="button-main bg-black text-white text-center uppercase w-full block py-4"
-                    onClick={closeModalCart}
-                  >
-                    View cart
-                  </Link>
+
+            {/* Tab Sections */}
+            <div
+              className={`tab-item note-block ${
+                activeTab === "note" ? "active" : "hidden"
+              }`}
+            >
+              <div className="px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center gap-3 cursor-pointer">
+                  <Icon.NotePencil size={20} />
+                  <span className="text-sm font-medium">Note</span>
                 </div>
-                <div
-                  onClick={closeModalCart}
-                  className="text-button-uppercase mt-4 text-center has-line-before cursor-pointer inline-block"
+              </div>
+              <div className="px-6 pb-4">
+                <textarea
+                  name="form-note"
+                  id="form-note"
+                  rows={4}
+                  placeholder="Add special instructions for your order..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                ></textarea>
+              </div>
+              <div className="px-6 pb-6 space-y-3">
+                <button
+                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                  onClick={() => setActiveTab("")}
                 >
-                  Or continue shopping
+                  Save
+                </button>
+                <button
+                  onClick={() => setActiveTab("")}
+                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`tab-item note-block ${
+                activeTab === "shipping" ? "active" : "hidden"
+              }`}
+            >
+              <div className="px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center gap-3 cursor-pointer">
+                  <Icon.Truck size={20} />
+                  <span className="text-sm font-medium">
+                    Estimate shipping rates
+                  </span>
                 </div>
               </div>
-              <div
-                className={`tab-item note-block ${
-                  activeTab === "note" ? "active" : ""
-                }`}
-              >
-                <div className="px-6 py-4 border-b border-line">
-                  <div className="item flex items-center gap-3 cursor-pointer">
-                    <Icon.NotePencil className="text-xl" />
-                    <div className="caption1">Note</div>
-                  </div>
-                </div>
-                <div className="form pt-4 px-6">
-                  <textarea
-                    name="form-note"
-                    id="form-note"
-                    rows={4}
-                    placeholder="Add special instructions for your order..."
-                    className="caption1 py-3 px-4 bg-surface border-line rounded-md w-full"
-                  ></textarea>
-                </div>
-                <div className="block-button text-center pt-4 px-6 pb-6">
-                  <div
-                    className="button-main w-full text-center"
-                    onClick={() => setActiveTab("")}
+              <div className="px-6 pb-4 space-y-4">
+                <div>
+                  <label
+                    htmlFor="select-country"
+                    className="text-sm text-gray-600 mb-2 block"
                   >
-                    Save
-                  </div>
-                  <div
-                    onClick={() => setActiveTab("")}
-                    className="text-button-uppercase mt-4 text-center has-line-before cursor-pointer inline-block"
-                  >
-                    Cancel
-                  </div>
-                </div>
-              </div>
-              <div
-                className={`tab-item note-block ${
-                  activeTab === "shipping" ? "active" : ""
-                }`}
-              >
-                <div className="px-6 py-4 border-b border-line">
-                  <div className="item flex items-center gap-3 cursor-pointer">
-                    <Icon.Truck className="text-xl" />
-                    <div className="caption1">Estimate shipping rates</div>
-                  </div>
-                </div>
-                <div className="form pt-4 px-6">
-                  <div className="">
-                    <label
-                      htmlFor="select-country"
-                      className="caption1 text-secondary"
+                    Country/region
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="select-country"
+                      name="select-country"
+                      className="w-full py-3 pl-4 pr-10 rounded-lg bg-white border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      defaultValue={"Country/region"}
                     >
-                      Country/region
-                    </label>
-                    <div className="select-block relative mt-2">
-                      <select
-                        id="select-country"
-                        name="select-country"
-                        className="w-full py-3 pl-5 rounded-xl bg-white border border-line"
-                        defaultValue={"Country/region"}
-                      >
-                        <option value="Country/region" disabled>
-                          Country/region
-                        </option>
-                        <option value="France">France</option>
-                        <option value="Spain">Spain</option>
-                        <option value="UK">UK</option>
-                        <option value="USA">USA</option>
-                      </select>
-                      <Icon.CaretDown
-                        size={12}
-                        className="absolute top-1/2 -translate-y-1/2 md:right-5 right-2"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <label
-                      htmlFor="select-state"
-                      className="caption1 text-secondary"
-                    >
-                      State
-                    </label>
-                    <div className="select-block relative mt-2">
-                      <select
-                        id="select-state"
-                        name="select-state"
-                        className="w-full py-3 pl-5 rounded-xl bg-white border border-line"
-                        defaultValue={"State"}
-                      >
-                        <option value="State" disabled>
-                          State
-                        </option>
-                        <option value="Paris">Paris</option>
-                        <option value="Madrid">Madrid</option>
-                        <option value="London">London</option>
-                        <option value="New York">New York</option>
-                      </select>
-                      <Icon.CaretDown
-                        size={12}
-                        className="absolute top-1/2 -translate-y-1/2 md:right-5 right-2"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <label
-                      htmlFor="select-code"
-                      className="caption1 text-secondary"
-                    >
-                      Postal/Zip Code
-                    </label>
-                    <input
-                      className="border-line px-5 py-3 w-full rounded-xl mt-3"
-                      id="select-code"
-                      type="text"
-                      placeholder="Postal/Zip Code"
+                      <option value="Country/region" disabled>
+                        Country/region
+                      </option>
+                      <option value="France">France</option>
+                      <option value="Spain">Spain</option>
+                      <option value="UK">UK</option>
+                      <option value="USA">USA</option>
+                    </select>
+                    <Icon.CaretDown
+                      size={12}
+                      className="absolute top-1/2 -translate-y-1/2 right-4 pointer-events-none"
                     />
                   </div>
                 </div>
-                <div className="block-button text-center pt-4 px-6 pb-6">
-                  <div
-                    className="button-main w-full text-center"
-                    onClick={() => setActiveTab("")}
+                <div>
+                  <label
+                    htmlFor="select-state"
+                    className="text-sm text-gray-600 mb-2 block"
                   >
-                    Calculator
-                  </div>
-                  <div
-                    onClick={() => setActiveTab("")}
-                    className="text-button-uppercase mt-4 text-center has-line-before cursor-pointer inline-block"
-                  >
-                    Cancel
-                  </div>
-                </div>
-              </div>
-              <div
-                className={`tab-item note-block ${
-                  activeTab === "coupon" ? "active" : ""
-                }`}
-              >
-                <div className="px-6 py-4 border-b border-line">
-                  <div className="item flex items-center gap-3 cursor-pointer">
-                    <Icon.Tag className="text-xl" />
-                    <div className="caption1">Add A Coupon Code</div>
-                  </div>
-                </div>
-                <div className="form pt-4 px-6">
-                  <div className="">
-                    <label
-                      htmlFor="select-discount"
-                      className="caption1 text-secondary"
+                    State
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="select-state"
+                      name="select-state"
+                      className="w-full py-3 pl-4 pr-10 rounded-lg bg-white border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      defaultValue={"State"}
                     >
-                      Enter Code
-                    </label>
-                    <input
-                      className="border-line px-5 py-3 w-full rounded-xl mt-3"
-                      id="select-discount"
-                      type="text"
-                      placeholder="Discount code"
+                      <option value="State" disabled>
+                        State
+                      </option>
+                      <option value="Paris">Paris</option>
+                      <option value="Madrid">Madrid</option>
+                      <option value="London">London</option>
+                      <option value="New York">New York</option>
+                    </select>
+                    <Icon.CaretDown
+                      size={12}
+                      className="absolute top-1/2 -translate-y-1/2 right-4 pointer-events-none"
                     />
                   </div>
                 </div>
-                <div className="block-button text-center pt-4 px-6 pb-6">
-                  <div
-                    className="button-main w-full text-center"
-                    onClick={() => setActiveTab("")}
+                <div>
+                  <label
+                    htmlFor="select-code"
+                    className="text-sm text-gray-600 mb-2 block"
                   >
-                    Apply
-                  </div>
-                  <div
-                    onClick={() => setActiveTab("")}
-                    className="text-button-uppercase mt-4 text-center has-line-before cursor-pointer inline-block"
-                  >
-                    Cancel
-                  </div>
+                    Postal/Zip Code
+                  </label>
+                  <input
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    id="select-code"
+                    type="text"
+                    placeholder="Postal/Zip Code"
+                  />
                 </div>
+              </div>
+              <div className="px-6 pb-6 space-y-3">
+                <button
+                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                  onClick={() => setActiveTab("")}
+                >
+                  Calculator
+                </button>
+                <button
+                  onClick={() => setActiveTab("")}
+                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`tab-item note-block ${
+                activeTab === "coupon" ? "active" : "hidden"
+              }`}
+            >
+              <div className="px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center gap-3 cursor-pointer">
+                  <Icon.Tag size={20} />
+                  <span className="text-sm font-medium">Add A Coupon Code</span>
+                </div>
+              </div>
+              <div className="px-6 pb-4">
+                <label
+                  htmlFor="select-discount"
+                  className="text-sm text-gray-600 mb-2 block"
+                >
+                  Enter Code
+                </label>
+                <input
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  id="select-discount"
+                  type="text"
+                  placeholder="Discount code"
+                />
+              </div>
+              <div className="px-6 pb-6 space-y-3">
+                <button
+                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                  onClick={() => setActiveTab("")}
+                >
+                  Apply
+                </button>
+                <button
+                  onClick={() => setActiveTab("")}
+                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
