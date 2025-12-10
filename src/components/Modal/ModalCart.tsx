@@ -25,22 +25,28 @@ const ModalCart = () => {
   const [activeTab, setActiveTab] = useState<string | undefined>("");
   const { isModalOpen, closeModalCart } = useModalCartContext();
   const { cartState, addToCart, removeFromCart, updateCart } = useCart();
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Freeze background scroll when modal is open
   useEffect(() => {
     if (isModalOpen) {
-      // Prevent scrolling on body
+      setIsAnimating(true);
       document.body.style.overflow = "hidden";
       document.body.style.height = "100vh";
       document.documentElement.style.overflow = "hidden";
     } else {
-      // Restore scrolling
+      // Delay cleanup to allow exit animation
+      const timer = setTimeout(() => {
+        setIsAnimating(false);
+      }, 300);
+
       document.body.style.overflow = "";
       document.body.style.height = "";
       document.documentElement.style.overflow = "";
+
+      return () => clearTimeout(timer);
     }
 
-    // Cleanup on unmount
     return () => {
       document.body.style.overflow = "";
       document.body.style.height = "";
@@ -96,30 +102,122 @@ const ModalCart = () => {
     );
   };
 
-  if (!isModalOpen) return null;
+  if (!isModalOpen && !isAnimating) return null;
 
   return (
     <>
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideInMobile {
+          from {
+            transform: translateY(100%);
+            opacity: 1;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideOutMobile {
+          from {
+            transform: translateY(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateY(100%);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideInDesktop {
+          from {
+            transform: translateX(100%);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideOutDesktop {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(100%);
+            opacity: 1;
+          }
+        }
+
+        .backdrop-enter {
+          animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .backdrop-exit {
+          animation: fadeOut 0.3s ease-out forwards;
+        }
+
+        .modal-enter-mobile {
+          animation: slideInMobile 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .modal-exit-mobile {
+          animation: slideOutMobile 0.3s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+        }
+
+        .modal-enter-desktop {
+          animation: slideInDesktop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .modal-exit-desktop {
+          animation: slideOutDesktop 0.3s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+        }
+      `}</style>
+
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-[9999]"
+        className={`fixed inset-0 bg-black bg-opacity-50 z-[9999] ${
+          isModalOpen ? "backdrop-enter" : "backdrop-exit"
+        }`}
         onClick={closeModalCart}
         style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflow: "hidden",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
         }}
       >
         <div
-          className="fixed top-0 right-0 h-[80vh] w-full max-w-md bg-white md:h-[100vh] shadow-2xl flex flex-col"
+          className={`fixed bg-white shadow-2xl flex flex-col
+            ${
+              isModalOpen
+                ? "modal-enter-mobile md:modal-enter-desktop"
+                : "modal-exit-mobile md:modal-exit-desktop"
+            }
+            bottom-0 left-0 right-0 rounded-t-3xl max-h-[90vh] h-[90vh]
+            md:top-0 md:right-0 md:left-auto md:bottom-auto md:rounded-none md:max-h-full md:h-full md:w-full md:max-w-md
+          `}
           onClick={(e) => {
             e.stopPropagation();
           }}
           style={{
-            maxHeight: "100vh",
-            height: "100vh",
             overflow: "hidden",
           }}
         >
@@ -149,7 +247,7 @@ const ModalCart = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {cartState.cartArray.map((product) => {
+                {cartState.cartArray.map((product, index) => {
                   if (!product || typeof product !== "object") {
                     console.error("Invalid product in cart:", product);
                     return null;
@@ -168,7 +266,12 @@ const ModalCart = () => {
                   return (
                     <div
                       key={product.id}
-                      className="flex gap-4 pb-4 border-b border-gray-200 last:border-b-0"
+                      className="flex gap-4 pb-4 border-b border-gray-200 last:border-b-0 transition-all duration-200 hover:bg-gray-50 rounded-lg px-2"
+                      style={{
+                        animation: isModalOpen
+                          ? `fadeIn 0.3s ease-out ${index * 0.05}s both`
+                          : "none",
+                      }}
                     >
                       <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                         <Image
@@ -186,7 +289,7 @@ const ModalCart = () => {
                               {product.name || "Unnamed Product"}
                             </h3>
                             <button
-                              className="text-red-500 hover:text-red-700 flex-shrink-0"
+                              className="text-red-500 hover:text-red-700 flex-shrink-0 transition-colors"
                               onClick={() => removeFromCart(product.id)}
                             >
                               <Icon.X size={20} weight="bold" />
@@ -196,7 +299,7 @@ const ModalCart = () => {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-1.5">
                             <button
-                              className="text-gray-600 hover:text-black font-medium w-6 h-6 flex items-center justify-center"
+                              className="text-gray-600 hover:text-black font-medium w-6 h-6 flex items-center justify-center transition-colors"
                               onClick={() => handleDecreaseQty(product.id)}
                             >
                               -
@@ -205,7 +308,7 @@ const ModalCart = () => {
                               {qty}
                             </span>
                             <button
-                              className="text-gray-600 hover:text-black font-medium w-6 h-6 flex items-center justify-center"
+                              className="text-gray-600 hover:text-black font-medium w-6 h-6 flex items-center justify-center transition-colors"
                               onClick={() => handleIncreaseQty(product.id)}
                             >
                               +
@@ -234,14 +337,14 @@ const ModalCart = () => {
               </div>
               <Link
                 href="/cart"
-                className="block w-full bg-black text-white text-center font-semibold py-3.5 rounded-lg hover:bg-gray-800 transition-colors uppercase text-sm tracking-wide"
+                className="block w-full bg-black text-white text-center font-semibold py-3.5 rounded-lg hover:bg-gray-800 transition-all duration-300 uppercase text-sm tracking-wide transform hover:scale-[1.02]"
                 onClick={closeModalCart}
               >
                 View Cart
               </Link>
               <button
                 onClick={closeModalCart}
-                className="w-full text-center text-sm text-gray-600 hover:text-black mt-3 font-medium uppercase tracking-wide"
+                className="w-full text-center text-sm text-gray-600 hover:text-black mt-3 font-medium uppercase tracking-wide transition-colors"
               >
                 Or Continue Shopping
               </button>
@@ -265,19 +368,19 @@ const ModalCart = () => {
                   id="form-note"
                   rows={4}
                   placeholder="Add special instructions for your order..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
                 ></textarea>
               </div>
               <div className="px-6 pb-6 space-y-3">
                 <button
-                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02]"
                   onClick={() => setActiveTab("")}
                 >
                   Save
                 </button>
                 <button
                   onClick={() => setActiveTab("")}
-                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium"
+                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -309,7 +412,7 @@ const ModalCart = () => {
                     <select
                       id="select-country"
                       name="select-country"
-                      className="w-full py-3 pl-4 pr-10 rounded-lg bg-white border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full py-3 pl-4 pr-10 rounded-lg bg-white border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
                       defaultValue={"Country/region"}
                     >
                       <option value="Country/region" disabled>
@@ -337,7 +440,7 @@ const ModalCart = () => {
                     <select
                       id="select-state"
                       name="select-state"
-                      className="w-full py-3 pl-4 pr-10 rounded-lg bg-white border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      className="w-full py-3 pl-4 pr-10 rounded-lg bg-white border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
                       defaultValue={"State"}
                     >
                       <option value="State" disabled>
@@ -362,7 +465,7 @@ const ModalCart = () => {
                     Postal/Zip Code
                   </label>
                   <input
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
                     id="select-code"
                     type="text"
                     placeholder="Postal/Zip Code"
@@ -371,14 +474,14 @@ const ModalCart = () => {
               </div>
               <div className="px-6 pb-6 space-y-3">
                 <button
-                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02]"
                   onClick={() => setActiveTab("")}
                 >
                   Calculator
                 </button>
                 <button
                   onClick={() => setActiveTab("")}
-                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium"
+                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -404,7 +507,7 @@ const ModalCart = () => {
                   Enter Code
                 </label>
                 <input
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black transition-all"
                   id="select-discount"
                   type="text"
                   placeholder="Discount code"
@@ -412,14 +515,14 @@ const ModalCart = () => {
               </div>
               <div className="px-6 pb-6 space-y-3">
                 <button
-                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                  className="w-full bg-black text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02]"
                   onClick={() => setActiveTab("")}
                 >
                   Apply
                 </button>
                 <button
                   onClick={() => setActiveTab("")}
-                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium"
+                  className="w-full text-center text-sm text-gray-600 hover:text-black font-medium transition-colors"
                 >
                   Cancel
                 </button>
